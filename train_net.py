@@ -10,7 +10,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 
 from lib.config import cfg
-from lib.data import make_data_loader
+from lib.data import build_data_loader
 from lib.engine.trainer import do_train
 from lib.models.model import build_model
 from lib.solver import make_lr_scheduler, make_optimizer
@@ -29,12 +29,12 @@ def set_random_seed(seed=0):
 
 
 def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard):
-    data_loader = make_data_loader(
+    data_loader = build_data_loader(
         cfg,
         is_train=True,
         is_distributed=distributed,
     )
-    data_loader_val = make_data_loader(
+    data_loader_val = build_data_loader(
         cfg,
         is_train=False,
         is_distributed=distributed,
@@ -154,7 +154,7 @@ def main():
     output_dir = os.path.join("./output", args.config_file[8:-5])
     makedir(output_dir)
 
-    logger = setup_logger("PersonSearch", output_dir, get_rank())
+    logger = setup_logger("CompFashion", output_dir, get_rank())
     logger.info("Using {} GPUs".format(num_gpus))
     logger.info(args)
 

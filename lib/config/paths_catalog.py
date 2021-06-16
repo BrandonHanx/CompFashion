@@ -5,68 +5,52 @@ import os
 
 
 class DatasetCatalog:
-    DATA_DIR = "datasets"
+    DATA_DIR = "train_data"
     DATASETS = {
-        "cuhkpedes_train": {
-            "img_dir": "cuhkpedes",
-            "ann_file": "cuhkpedes/annotations/train.json",
+        "fashioniq_dress_train": {
+            "path": "fashioniq",
+            "split": "train",
+            "cat_type": "dress",
         },
-        "cuhkpedes_val": {
-            "img_dir": "cuhkpedes",
-            "ann_file": "cuhkpedes/annotations/val.json",
+        "fashioniq_shirt_train": {
+            "path": "fashioniq",
+            "split": "train",
+            "cat_type": "shirt",
         },
-        "cuhkpedes_test": {
-            "img_dir": "cuhkpedes",
-            "ann_file": "cuhkpedes/annotations/test.json",
+        "fashioniq_toptee_train": {
+            "path": "fashioniq",
+            "split": "train",
+            "cat_type": "toptee",
         },
-        "mscoco_train": {
-            "img_dir": "mscoco",
-            "ann_file": "mscoco/annotations/train.json",
+        "fashioniq_dress_val": {
+            "path": "fashioniq",
+            "split": "val",
+            "cat_type": "dress",
         },
-        "mscoco_val": {
-            "img_dir": "mscoco",
-            "ann_file": "mscoco/annotations/val.json",
+        "fashioniq_shirt_val": {
+            "path": "fashioniq",
+            "split": "val",
+            "cat_type": "shirt",
         },
-        "mscoco_rv": {
-            "img_dir": "mscoco",
-            "ann_file": "mscoco/annotations/restval.json",
-        },
-        "mscoco_test": {
-            "img_dir": "mscoco",
-            "ann_file": "mscoco/annotations/test.json",
-        },
-        "mscoco_val_1k": {
-            "img_dir": "mscoco",
-            "ann_file": "mscoco/annotations/val_1k.json",
-        },
-        "mscoco_test_1k": {
-            "img_dir": "mscoco",
-            "ann_file": "mscoco/annotations/test_1k.json",
+        "fashioniq_toptee_val": {
+            "path": "fashioniq",
+            "split": "val",
+            "cat_type": "toptee",
         },
     }
 
     @staticmethod
     def get(name):
-        if "cuhkpedes" in name:
+        if "fashioniq" in name:
             data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(
-                root=os.path.join(data_dir, attrs["img_dir"]),
-                ann_file=os.path.join(data_dir, attrs["ann_file"]),
+                path=os.path.join(data_dir, attrs["path"]),
+                split=attrs["split"],
+                cat_type=attrs["cat_type"],
             )
             return dict(
-                factory="CUHKPEDESDataset",
-                args=args,
-            )
-        elif "mscoco" in name:
-            data_dir = DatasetCatalog.DATA_DIR
-            attrs = DatasetCatalog.DATASETS[name]
-            args = dict(
-                root=os.path.join(data_dir, attrs["img_dir"]),
-                ann_file=os.path.join(data_dir, attrs["ann_file"]),
-            )
-            return dict(
-                factory="MSCOCODataset",
+                factory="FashionIQ",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))

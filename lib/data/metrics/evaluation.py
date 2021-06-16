@@ -100,7 +100,7 @@ def evaluation_common(
     save_data=True,
     rerank=True,
 ):
-    logger = logging.getLogger("PersonSearch.inference")
+    logger = logging.getLogger("CompFashion.inference")
     data_dir = os.path.join(output_folder, "inference_data.npz")
 
     if predictions is None:
@@ -200,7 +200,7 @@ def evaluation_cross(
     save_data=True,
     sim_calculator=None,
 ):
-    logger = logging.getLogger("PersonSearch.inference")
+    logger = logging.getLogger("CompFashion.inference")
     data_dir = os.path.join(output_folder, "inference_data.npz")
 
     if predictions is None:

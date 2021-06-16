@@ -37,7 +37,7 @@ def _accumulate_predictions_from_multiple_gpus(predictions_per_gpu):
     # convert a dict where the key is the index in a list
     image_ids = list(sorted(predictions.keys()))
     if len(image_ids) != image_ids[-1] + 1:
-        logger = logging.getLogger("PersonSearch.inference")
+        logger = logging.getLogger("CompFashion.inference")
         logger.warning(
             "Number of images that were gathered from multiple processes is not "
             "a contiguous set. Some images might be missing from the evaluation"
@@ -54,7 +54,7 @@ def inference(
     save_data=True,
     rerank=True,
 ):
-    logger = logging.getLogger("PersonSearch.inference")
+    logger = logging.getLogger("CompFashion.inference")
     dataset = data_loader.dataset
     logger.info(
         "Start evaluation on {} dataset({} images).".format(dataset_name, len(dataset))

@@ -8,7 +8,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 
 from lib.config import cfg
-from lib.data import make_data_loader
+from lib.data import build_data_loader
 from lib.engine.inference import inference
 from lib.models.model import build_model
 from lib.utils.checkpoint import Checkpointer
@@ -80,11 +80,13 @@ def main():
         makedir(output_folder)
         output_folders.append(output_folder)
 
-    data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
+    data_loaders_val = build_data_loader(
+        cfg, is_train=False, is_distributed=distributed
+    )
     for output_folder, dataset_name, data_loader_val in zip(
         output_folders, dataset_names, data_loaders_val
     ):
-        logger = setup_logger("PersonSearch", output_folder, get_rank())
+        logger = setup_logger("CompFashion", output_folder, get_rank())
         logger.info("Using {} GPUs".format(num_gpus))
         logger.info(cfg)
 

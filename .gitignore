@@ -4,6 +4,6 @@
 *.npy
 
 output/
-datasets/
+train_data/
 pretrained/
 __pycache__/

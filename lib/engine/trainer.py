@@ -48,7 +48,7 @@ def do_train(
     evaluate_period,
     arguments,
 ):
-    logger = logging.getLogger("PersonSearch.trainer")
+    logger = logging.getLogger("CompFashion.trainer")
     logger.info("Start training")
 
     max_epoch = arguments["max_epoch"]
@@ -105,7 +105,6 @@ def do_train(
                             "epoch [{epoch}][{inner_iter}/{num_iter}]",
                             "{meters}",
                             "lr: {lr:.6f}",
-                            "max mem: {memory:.0f}",
                         ]
                     ).format(
                         eta=eta_string,
@@ -114,7 +113,6 @@ def do_train(
                         num_iter=len(data_loader),
                         meters=str(meters),
                         lr=optimizer.param_groups[-1]["lr"],
-                        memory=torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
                     )
                 )
 

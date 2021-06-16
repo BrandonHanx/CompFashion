@@ -1,17 +1,41 @@
-import torch.utils.data
+import torch.utils.data as tud
+import torchvision.transform as T
 
 from lib.config.paths_catalog import DatasetCatalog
 from lib.utils.comm import get_world_size
 
 from . import datasets as D
-from . import samplers
 from .collate_batch import collate_fn
-from .transforms import build_crop_transforms, build_transforms
 
 
-def build_dataset(
-    cfg, dataset_list, transforms, crop_transforms, dataset_catalog, is_train=True
-):
+def build_transform(name, is_train):
+    normalizer = T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    if "fashioniq" in name:
+        if is_train:
+            transform = T.Compose(
+                [
+                    T.RandomResizedCrop(224, scale=(0.8, 1.0), ratio=(0.75, 1.3)),
+                    T.RandomHorizontalFlip(),
+                    T.ToTensor(),
+                    # T.Lambda(
+                    #     lambda xx: xx + 0.01 * torch.randn(xx.shape)
+                    # ),
+                    normalizer,
+                ]
+            )
+        else:
+            transform = T.Compose(
+                [
+                    T.ToTensor(),
+                    normalizer,
+                ]
+            )
+    else:
+        NotImplementedError
+    return transform
+
+
+def build_dataset(dataset_list, dataset_catalog, is_train=True):
     if not isinstance(dataset_list, (list, tuple)):
         raise RuntimeError(
             "dataset_list should be a list of strings, got {}".format(dataset_list)
@@ -21,15 +45,7 @@ def build_dataset(
         data = dataset_catalog.get(dataset_name)
         factory = getattr(D, data["factory"])
         args = data["args"]
-        args["transforms"] = transforms
-
-        if data["factory"] == "CUHKPEDESDataset":
-            args["use_onehot"] = cfg.DATASETS.USE_ONEHOT
-            args["use_seg"] = cfg.DATASETS.USE_SEG
-            args["use_att"] = cfg.DATASETS.USE_ATT
-            args["crop_transforms"] = crop_transforms
-            args["max_length"] = 100
-            args["max_attribute_length"] = 25
+        args["transform"] = build_transform(dataset_name, is_train)
 
         # make dataset from factory
         dataset = factory(**args)
@@ -40,40 +56,30 @@ def build_dataset(
         return datasets
 
     # for training, concatenate all datasets into a single one
-    dataset = datasets[0]
     if len(datasets) > 1:
-        dataset = D.ConcatDataset(datasets)
+        dataset = tud.ConcatDataset(datasets)
 
     return [dataset]
 
 
-def make_data_sampler(dataset, shuffle, distributed):
+def build_data_sampler(dataset, shuffle, distributed):
     if distributed:
-        return torch.utils.data.distributed.DistributedSampler(dataset)
+        return tud.distributed.DistributedSampler(dataset)
     if shuffle:
-        sampler = torch.utils.data.sampler.RandomSampler(dataset)
+        sampler = tud.sampler.RandomSampler(dataset)
     else:
-        sampler = torch.utils.data.sampler.SequentialSampler(dataset)
+        sampler = tud.sampler.SequentialSampler(dataset)
     return sampler
 
 
-def make_batch_data_sampler(cfg, dataset, sampler, images_per_batch, is_train=True):
-    if is_train and cfg.DATALOADER.EN_SAMPLER:
-        batch_sampler = samplers.TripletSampler(
-            sampler,
-            dataset,
-            images_per_batch,
-            cfg.DATALOADER.IMS_PER_ID,
-            drop_last=True,
-        )
-    else:
-        batch_sampler = torch.utils.data.sampler.BatchSampler(
-            sampler, images_per_batch, drop_last=is_train
-        )
+def build_batch_data_sampler(sampler, images_per_batch, is_train=True):
+    batch_sampler = tud.sampler.BatchSampler(
+        sampler, images_per_batch, drop_last=is_train
+    )
     return batch_sampler
 
 
-def make_data_loader(cfg, is_train=True, is_distributed=False):
+def build_data_loader(cfg, is_train=True, is_distributed=False):
     num_gpus = get_world_size()
     if is_train:
         images_per_batch = cfg.SOLVER.IMS_PER_BATCH
@@ -95,26 +101,14 @@ def make_data_loader(cfg, is_train=True, is_distributed=False):
         shuffle = is_distributed
 
     dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
-
-    transforms = build_transforms(cfg, is_train)
-
-    if cfg.DATASETS.USE_SEG:
-        crop_transforms = build_crop_transforms(cfg)
-    else:
-        crop_transforms = None
-
-    datasets = build_dataset(
-        cfg, dataset_list, transforms, crop_transforms, DatasetCatalog, is_train
-    )
+    datasets = build_dataset(dataset_list, DatasetCatalog, is_train)
 
     data_loaders = []
     for dataset in datasets:
-        sampler = make_data_sampler(dataset, shuffle, is_distributed)
-        batch_sampler = make_batch_data_sampler(
-            cfg, dataset, sampler, images_per_gpu, is_train
-        )
+        sampler = build_data_sampler(dataset, shuffle, is_distributed)
+        batch_sampler = build_batch_data_sampler(sampler, images_per_gpu, is_train)
         num_workers = cfg.DATALOADER.NUM_WORKERS
-        data_loader = torch.utils.data.DataLoader(
+        data_loader = tud.DataLoader(
             dataset,
             num_workers=num_workers,
             batch_sampler=batch_sampler,
