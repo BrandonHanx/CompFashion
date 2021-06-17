@@ -41,7 +41,7 @@ def build_bert(cfg):
     model = Bert(cfg.MODEL.BERT.POOL)
     model.train()
 
-    if cfg.MODEL.FREEZE:
+    if cfg.MODEL.BERT.FREEZE:
         pass
 
     return model
