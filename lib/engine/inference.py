@@ -14,12 +14,13 @@ from lib.utils.comm import all_gather, is_main_process, synchronize
 def compute_on_dataset(model, data_loader, device):
     model.eval()
     results_dict = defaultdict(list)
-    for batch in tqdm(data_loader):
-        images, captions, image_ids = batch
-        images = images.to(device)
-        captions = [caption.to(device) for caption in captions]
+    for batch_data in tqdm(data_loader):
+        for k, v in batch_data.items():
+            if not k == "meta_info":
+                batch_data[k] = v.to(device)
+
         with torch.no_grad():
-            output = model(images, captions)
+            comp_feature, target_feature = model(batch_data)
         for result in output:
             for img_id, pred in zip(image_ids, result):
                 results_dict[img_id].append(pred)

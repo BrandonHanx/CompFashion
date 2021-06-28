@@ -2,7 +2,7 @@ import PIL
 import torch
 import torch.utils.data
 
-from lib.utils.directory import memcache
+from lib.utils.directory import memcache, read_json
 
 
 class FashionIQ(torch.utils.data.Dataset):
@@ -18,7 +18,10 @@ class FashionIQ(torch.utils.data.Dataset):
         self.data = []
 
         caps_file = f"{path}/captions/cap.{cat_type}.{text_feat}.{split}.pkl"
+        split_file = f"{path}/image_splits/split.{cat_type}.{split}.json"
+
         self.data = memcache(caps_file)
+        self.all_img_ids = read_json(split_file)
 
     def __getitem__(self, idx):
         source_img_id = self.data[idx]["candidate"]
@@ -26,7 +29,7 @@ class FashionIQ(torch.utils.data.Dataset):
         meta_info = {
             "source_img_id": source_img_id,
             "target_img_id": target_img_id,
-            "original_captions": " ".join(self.data[idx]["captions"]).lower(),
+            "original_caption": " ".join(self.data[idx]["captions"]).lower(),
         }
         source_image = self.get_img(source_img_id)
         target_image = self.get_img(target_img_id)
@@ -48,3 +51,12 @@ class FashionIQ(torch.utils.data.Dataset):
             img = self.transform(img)
 
         return img
+
+    def get_all_imgs(self, batch_size):
+        imgs = []
+        for img_id in self.all_img_ids:
+            imgs.append(self.get_img(img_id))
+            if len(imgs) == batch_size or img_id == self.all_img_ids[-1]:
+                batch_imgs = imgs
+                imgs = []
+                yield torch.stack(batch_imgs)

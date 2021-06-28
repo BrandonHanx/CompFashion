@@ -42,14 +42,10 @@ _C.INPUT.USE_AUG = False
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
 _C.MODEL.DEVICE = "cuda"
-_C.MODEL.VISUAL_MODEL = "resnet50"
-_C.MODEL.TEXTUAL_MODEL = "bilstm"
-_C.MODEL.NUM_CLASSES = 11003
-_C.MODEL.NUM_PARTS = 5
-_C.MODEL.WEIGHT = "imagenet"
-_C.MODEL.WHOLE = False
-_C.MODEL.INFERENCE_MODE = "common"
-
+_C.MODEL.IMG_MODEL = "resnet50"
+_C.MODEL.TEXT_MODEL = "bilstm"
+_C.MODEL.COMP_MODEL = "tirg"
+_C.MODEL.LOSS = "bbc"
 
 # -----------------------------------------------------------------------------
 # GRU
@@ -74,28 +70,21 @@ _C.MODEL.BERT.FREEZE = False
 _C.MODEL.RESNET = CN()
 _C.MODEL.RESNET.RES5_STRIDE = 2
 _C.MODEL.RESNET.RES5_DILATION = 1
-_C.MODEL.RESNET.ATTN_POOL = False
-_C.MODEL.RESNET.IBNA = False
-_C.MODEL.RESNET.PATCH_MIX = False
 _C.MODEL.RESNET.PRETRAINED = None
-
+_C.MODEL.RESNET.FREEZE = False
 
 # -----------------------------------------------------------------------------
-# Embedding
+# Composition
 # -----------------------------------------------------------------------------
-_C.MODEL.EMBEDDING = CN()
-_C.MODEL.EMBEDDING.EMBED_HEAD = "simple"
-_C.MODEL.EMBEDDING.FEATURE_SIZE = 512
-_C.MODEL.EMBEDDING.DROPOUT_PROB = 0.3
-_C.MODEL.EMBEDDING.BNNECK = False
-_C.MODEL.EMBEDDING.CMPC = False
-_C.MODEL.EMBEDDING.CMPM = False
-_C.MODEL.EMBEDDING.MIXTURE = False
-_C.MODEL.EMBEDDING.K_RECIPROCAL = True
-_C.MODEL.EMBEDDING.SHARED_LAYER = False
-_C.MODEL.EMBEDDING.EPSILON = 0.0
-_C.MODEL.EMBEDDING.TASK = ["CMR"]
-_C.MODEL.EMBEDDING.LEARN_SCALE = False
+_C.MODEL.COMP = CN()
+_C.MODEL.COMP.EMBED_DIM = 512
+
+# -----------------------------------------------------------------------------
+# Normalization Layer
+# -----------------------------------------------------------------------------
+_C.MODEL.NORM = CN()
+_C.MODEL.NORM.SCALE = 0.4
+_C.MODEL.NORM.LEARNABLE = True
 
 # -----------------------------------------------------------------------------
 # Solver

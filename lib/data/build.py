@@ -1,11 +1,11 @@
 import torch.utils.data as tud
 import torchvision.transform as T
 
-from lib.config.paths_catalog import DatasetCatalog
 from lib.utils.comm import get_world_size
 
 from . import datasets as D
 from .collate_batch import collate_fn
+from .datasets import DatasetCatalog
 
 
 def build_transform(name, is_train):

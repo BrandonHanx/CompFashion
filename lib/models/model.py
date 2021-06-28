@@ -1,46 +1,42 @@
-from torch import nn
+import torch.nn as nn
 
-from .backbones.bert import build_bert
-from .backbones.bigru import build_bigru
-from .backbones.resnet import build_resnet
+from .backbones import build_img_model, build_text_model
 from .composition import build_composition
-from .losses import build_loss_evaluator
+from .functions import build_loss_func, build_norm_layer
+
+__all__ = ["build_model"]
 
 
 class Model(nn.Module):
     def __init__(self, cfg):
         super().__init__()
-        self.visual_model = None
-        self.textual_model = None
+        self.img_model = build_img_model(cfg)
+        self.text_model = build_text_model(cfg)
+        self.comp_model = build_composition(cfg)
+        self.norm_layer = build_norm_layer(cfg)
+        self.loss_func = build_loss_func(cfg)
 
-        if cfg.MODEL.VISUAL_MODEL in ["resnet34", "resnet50", "resnet101"]:
-            self.visual_model = build_resnet(cfg)
+    def extract_img_feature(self, imgs):
+        raise self.img_model(imgs)
 
-        if cfg.MODEL.TEXTUAL_MODEL == "bigru":
-            self.textual_model = build_bigru(cfg)
-        else:
-            self.textual_model = build_bert(cfg)
+    def extract_text_feature(self, texts, text_lengths):
+        raise self.text_model(texts, text_lengths)
 
-        self.composition_model = build_composition(
-            cfg, self.visual_model.out_channels, self.textual_model.out_channels
-        )
+    def compose_img_text_features(self, img_feats, text_feats):
+        raise self.comp_model(img_feats, text_feats)
 
-        self.loss_evaluator = build_loss_evaluator(cfg)
+    def compose_img_text(self, imgs, texts, text_lengths):
+        img_feats = self.extract_img_feature(imgs)
+        text_feats = self.extract_text_feature(texts, text_lengths)
+        return self.compose_img_text_features(img_feats, text_feats)
 
-    def forward(self, batch_data):
-        source_feature = self.visual_model(batch_data["source_images"])
-        target_feature = self.visual_model(batch_data["target_images"])
-        text_feature = self.textual_model(
-            batch_data["text"], batch_data["text_lengths"]
-        )
-
-        comp_feature = self.composition_model(source_feature, text_feature)
-
-        if self.training:
-            losses = self.loss_evaluator(source_feature, target_feature)
-            return losses
-
-        return comp_feature
+    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
+        mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
+        mod_img1 = self.norm_layer(mod_img1)
+        img2 = self.extract_img_feature(imgs_target)
+        img2 = self.norm_layer(img2)
+        assert mod_img1.shape[0] == img2.shape[0] and mod_img1.shape[1] == img2.shape[1]
+        return self.loss_func(mod_img1, img2)
 
 
 def build_model(cfg):

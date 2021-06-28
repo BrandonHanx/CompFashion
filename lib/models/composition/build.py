@@ -1,5 +1,9 @@
-from .simple_head.head import build_simple_head
+from .tirg import build_tirg
 
 
-def build_composition(cfg, visual_out_channels, textual_out_channels):
-    return build_simple_head(cfg, visual_out_channels, textual_out_channels)
+def build_composition(cfg):
+    if cfg.MODEL.COMP_MODEL == "tirg":
+        model = build_tirg(cfg)
+    else:
+        raise NotImplementedError
+    return model

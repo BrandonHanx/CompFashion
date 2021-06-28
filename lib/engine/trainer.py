@@ -69,16 +69,17 @@ def do_train(
         model.train()
         arguments["epoch"] = epoch
 
-        for step, (images, captions, _) in enumerate(data_loader):
+        for step, batch_data in enumerate(data_loader):
             data_time = time.time() - end
             inner_iter = step
             iteration += 1
             arguments["iteration"] = iteration
 
-            images = images.to(device)
-            captions = [caption.to(device) for caption in captions]
+            for k, v in batch_data.items():
+                if not k == "meta_info":
+                    batch_data[k] = v.to(device)
 
-            loss_dict = model(images, captions)
+            loss_dict = model(batch_data)
             losses = sum(loss for loss in loss_dict.values())
 
             # reduce losses over all GPUs for logging purposes

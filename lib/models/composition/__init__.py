@@ -1,3 +1,3 @@
-from build import build_composition
+from .build import build_composition
 
 __all__ = ["build_composition"]

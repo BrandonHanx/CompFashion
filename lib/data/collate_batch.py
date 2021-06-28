@@ -15,6 +15,17 @@ def collate_fn(batch):
     for i, feature in enumerate(text_feature):
         text[i, : text_lengths[i], :] = feature[:max_text_words]
 
+    source_img_ids, target_image_ids, original_captions = [], [], []
+    for info in meta_info:
+        source_img_ids.append(info["source_img_id"])
+        target_image_ids.append(info["target_img_id"])
+        original_captions.append(info["original_caption"])
+    meta_info = dict(
+        source_img_ids=source_img_ids,
+        target_image_ids=target_image_ids,
+        original_captions=original_captions,
+    )
+
     return {
         "text": torch.FloatTensor(text),
         "text_lengths": torch.LongTensor(text_lengths),
