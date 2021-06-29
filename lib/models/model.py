@@ -39,5 +39,24 @@ class Model(nn.Module):
         return self.loss_func(mod_img1, img2)
 
 
+class ProjModel(Model):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.img_proj_layer = nn.Linear(
+            self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
+        self.text_proj_layer = nn.Linear(
+            self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
+
+    def extract_img_feature(self, imgs):
+        return self.img_proj_layer(self.img_model(imgs))
+
+    def extract_text_feature(self, texts, text_lengths):
+        return self.text_proj_layer(self.text_model(texts, text_lengths))
+
+
 def build_model(cfg):
+    if cfg.MODEL.COMP.PROJ_LAYER:
+        return ProjModel(cfg)
     return Model(cfg)
