@@ -1,5 +1,5 @@
 import torch.utils.data as tud
-import torchvision.transform as T
+import torchvision.transforms as T
 
 from lib.utils.comm import get_world_size
 
@@ -26,6 +26,7 @@ def build_transform(name, is_train):
         else:
             transform = T.Compose(
                 [
+                    T.Resize((224, 224)),
                     T.ToTensor(),
                     normalizer,
                 ]

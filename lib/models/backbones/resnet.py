@@ -122,7 +122,7 @@ class ResNet(nn.Module):
             block, 512, layers[3], stride=res5_stride, dilation=res5_dilation
         )
 
-        if pretrained is not None:
+        if pretrained is None:
             self.load_state_dict(remove_fc(model_zoo.load_url(model_arch.url)))
         else:
             self.load_state_dict(torch.load(pretrained))
@@ -165,7 +165,7 @@ class ResNet(nn.Module):
 
         x = self.avgpool(x)
 
-        return x
+        return x.squeeze()
 
     def _init_weight(self):
         for m in self.modules():
@@ -214,7 +214,7 @@ model_archs["resnet152"] = resnet(
 
 
 def build_resnet(cfg):
-    arch = cfg.MODEL.VISUAL_MODEL
+    arch = cfg.MODEL.IMG_MODEL
     res5_stride = cfg.MODEL.RESNET.RES5_STRIDE
     res5_dilation = cfg.MODEL.RESNET.RES5_DILATION
     pretrained = cfg.MODEL.RESNET.PRETRAINED

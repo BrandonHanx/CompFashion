@@ -68,11 +68,7 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
 
     save_to_disk = get_rank() == 0
     checkpointer = Checkpointer(model, optimizer, scheduler, output_dir, save_to_disk)
-    if cfg.MODEL.WEIGHT != "imagenet":
-        if os.path.isfile(cfg.MODEL.WEIGHT):
-            checkpointer.load(cfg.MODEL.WEIGHT)
-        else:
-            raise IOError("{} is not a checkpoint file".format(cfg.MODEL.WEIGHT))
+
     if resume_from:
         if os.path.isfile(resume_from):
             extra_checkpoint_data = checkpointer.resume(resume_from)
@@ -89,6 +85,7 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
     else:
         meters = MetricLogger(delimiter="  ")
 
+    log_period = cfg.SOLVER.LOG_PERIOD
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
     evaluate_period = cfg.SOLVER.EVALUATE_PERIOD
     arguments["max_epoch"] = cfg.SOLVER.NUM_EPOCHS
@@ -103,6 +100,7 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
         checkpointer,
         meters,
         device,
+        log_period,
         checkpoint_period,
         evaluate_period,
         arguments,
@@ -169,7 +167,6 @@ def main():
     with open(args.config_file, "r") as cf:
         config_str = "\n" + cf.read()
         logger.info(config_str)
-    logger.info("Running with config:\n{}".format(cfg))
 
     train(
         cfg,

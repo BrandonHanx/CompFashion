@@ -7,7 +7,7 @@ MAX_TEXT_WORDS = 30
 def collate_fn(batch):
     text_feature, source, target, meta_info = zip(*batch)
     batch_size = len(text_feature)
-    text_dim = len(text_feature[0])
+    text_dim = text_feature[0].shape[-1]
     text_lengths = [len(x) for x in text_feature]
     max_text_words = min(max(text_lengths), MAX_TEXT_WORDS)
 

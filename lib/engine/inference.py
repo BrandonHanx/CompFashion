@@ -10,22 +10,24 @@ from lib.data.metrics import evaluation
 from lib.utils.comm import all_gather, is_main_process, synchronize
 
 
-def compute_on_dataset(model, data_loader, device, batch_size):
+def compute_on_dataset(model, data_loader, device):
     model.eval()
     query_feats, query_ids, gallery_feats = [], [], []
 
     for batch_data in tqdm(data_loader):
         imgs = batch_data["source_images"].to(device)
-        texts = batch_data["texts"].to(device)
+        texts = batch_data["text"].to(device)
         text_lengths = batch_data["text_lengths"].to(device)
-        query_ids.append(batch_data["meta_info"]["target_img_id"])
+        query_ids.extend(batch_data["meta_info"]["target_image_ids"])
         with torch.no_grad():
             query_feat = model.norm_layer(
                 model.compose_img_text(imgs, texts, text_lengths)
             )
             query_feats.append(query_feat)
 
-    for imgs in tqdm(data_loader.get_all_imgs(batch_size)):
+    for imgs in tqdm(
+        data_loader.dataset.get_all_imgs(data_loader.batch_sampler.batch_size)
+    ):
         imgs = imgs.to(device)
         with torch.no_grad():
             gallery_feat = model.norm_layer(model.extract_img_feature(imgs))
@@ -35,7 +37,7 @@ def compute_on_dataset(model, data_loader, device, batch_size):
         query_feats=query_feats,
         query_ids=query_ids,
         gallery_feats=gallery_feats,
-        gallery_ids=data_loader.all_img_ids.values(),
+        gallery_ids=list(data_loader.dataset.all_img_ids.values()),
     )
 
     return results_dict
@@ -49,14 +51,6 @@ def _accumulate_predictions_from_multiple_gpus(predictions_per_gpu):
     predictions = {}
     for p in all_predictions:
         predictions.update(p)
-    # convert a dict where the key is the index in a list
-    image_ids = list(sorted(predictions.keys()))
-    if len(image_ids) != image_ids[-1] + 1:
-        logger = logging.getLogger("CompFashion.inference")
-        logger.warning(
-            "Number of images that were gathered from multiple processes is not "
-            "a contiguous set. Some images might be missing from the evaluation"
-        )
     return predictions
 
 

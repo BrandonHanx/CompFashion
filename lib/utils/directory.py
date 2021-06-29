@@ -57,10 +57,10 @@ def memcache(path):
 
 
 def read_json(fname):
-    with fname.open("rt") as handle:
+    with open(fname, "rt") as handle:
         return json.load(handle, object_hook=OrderedDict)
 
 
 def write_json(content, fname):
-    with fname.open("wt") as handle:
+    with open(fname, "wt") as handle:
         json.dump(content, handle, indent=4, sort_keys=False)

@@ -45,7 +45,7 @@ class FashionIQ(torch.utils.data.Dataset):
         return len(self.data)
 
     def get_img(self, img_name):
-        img_path = f"{self.path}/all_imgs/{img_name}.jpg"
+        img_path = f"{self.path}/images/{img_name}.jpg"
 
         with open(img_path, "rb") as f:
             img = PIL.Image.open(f)

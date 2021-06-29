@@ -36,4 +36,4 @@ class TIRG(nn.Module):
 
 
 def build_tirg(cfg):
-    return TIRG(cfg.MODEL.COMP_MODEL.EMBED_DIM)
+    return TIRG(cfg.MODEL.COMP.EMBED_DIM)

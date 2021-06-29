@@ -4,8 +4,6 @@ import os
 import numpy as np
 import torch
 
-from lib.utils.logger import table_log
-
 
 def rank(similarity, q_ids, g_ids, topk=[1, 5, 10, 50], get_mAP=True):
     max_rank = max(topk)
@@ -56,8 +54,8 @@ def evaluation(
     else:
         g_ids = torch.tensor(predictions["gallery_ids"])
         q_ids = torch.tensor(predictions["query_ids"])
-        g_feats = torch.stack(predictions["gallery_feats"], dim=0)
-        q_feats = torch.stack(predictions["query_feats"], dim=0)
+        g_feats = torch.cat(predictions["gallery_feats"], dim=0)
+        q_feats = torch.cat(predictions["query_feats"], dim=0)
 
         similarity = torch.matmul(q_feats, g_feats.t())
 
@@ -75,7 +73,7 @@ def evaluation(
 
     cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
     results = cmc.t().cpu().numpy()
-    logger.info("\n")
-    logger.info(table_log(results, headers=["k", "recall"]))
+    for k, result in zip(topk, results):
+        logger.info("R@{}: {}".format(k, result))
 
     return cmc[2]

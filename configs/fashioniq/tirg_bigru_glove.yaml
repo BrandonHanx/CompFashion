@@ -1,12 +1,14 @@
 MODEL:
-  VISUAL_MODEL: "resnet50"
-  TEXTUAL_MODEL: "bigru"
+  IMG_MODEL: "resnet50"
+  TEXT_MODEL: "bigru"
   COMP_MODEL: "tirg"
   LOSS: "bbc"
   GRU:
     EMBEDDING_SIZE: 512
     NUM_UNITS: 1024
     VOCABULARY_SIZE: 300
+  COMP:
+    EMBED_DIM: 2048
 INPUT:
   HEIGHT: 224
   WIDTH: 224

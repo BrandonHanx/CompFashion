@@ -44,6 +44,7 @@ def do_train(
     checkpointer,
     meters,
     device,
+    log_period,
     checkpoint_period,
     evaluate_period,
     arguments,
@@ -76,7 +77,7 @@ def do_train(
             arguments["iteration"] = iteration
 
             imgs_query = batch_data["source_images"].to(device)
-            mod_texts = batch_data["texts"].to(device)
+            mod_texts = batch_data["text"].to(device)
             text_lengths = batch_data["text_lengths"].to(device)
             imgs_target = batch_data["target_images"].to(device)
 
@@ -101,7 +102,7 @@ def do_train(
             eta_seconds = meters.time.global_avg * (max_iter - iteration)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
 
-            if inner_iter % 1 == 0:
+            if inner_iter % log_period == 0:
                 logger.info(
                     meters.delimiter.join(
                         [

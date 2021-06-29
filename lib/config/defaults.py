@@ -8,10 +8,6 @@ _C = CN()
 _C.DATASETS = CN()
 _C.DATASETS.TRAIN = ()
 _C.DATASETS.TEST = ()
-_C.DATASETS.USE_ONEHOT = True
-_C.DATASETS.USE_SEG = True
-_C.DATASETS.USE_ATT = True
-_C.DATASETS.BIN_SEG = False
 
 # -----------------------------------------------------------------------------
 # DataLoader
@@ -19,9 +15,6 @@ _C.DATASETS.BIN_SEG = False
 _C.DATALOADER = CN()
 # Number of data loading threads
 _C.DATALOADER.NUM_WORKERS = 4
-_C.DATALOADER.IMS_PER_ID = 4
-_C.DATALOADER.EN_SAMPLER = True
-
 
 # -----------------------------------------------------------------------------
 # Input
@@ -31,11 +24,7 @@ _C.INPUT.HEIGHT = 224
 _C.INPUT.WIDTH = 224
 _C.INPUT.PIXEL_MEAN = [0.485, 0.456, 0.406]
 _C.INPUT.PIXEL_STD = [0.229, 0.224, 0.225]
-_C.INPUT.CROP_SIZE = 32
-_C.INPUT.DOWNSAMPLE_RATIO = 1 / 8
 _C.INPUT.PADDING = 10
-_C.INPUT.USE_AUG = False
-
 
 # -----------------------------------------------------------------------------
 # Model
@@ -55,6 +44,7 @@ _C.MODEL.GRU.NUM_UNITS = 512
 _C.MODEL.GRU.VOCABULARY_SIZE = 12000
 _C.MODEL.GRU.DROPOUT = 0.0
 _C.MODEL.GRU.FREEZE = False
+_C.MODEL.GRU.NUM_LAYER = 1
 
 # -----------------------------------------------------------------------------
 # BERT
@@ -91,6 +81,8 @@ _C.MODEL.NORM.LEARNABLE = True
 _C.SOLVER = CN()
 _C.SOLVER.IMS_PER_BATCH = 16
 _C.SOLVER.NUM_EPOCHS = 100
+
+_C.SOLVER.LOG_PERIOD = 10
 _C.SOLVER.CHECKPOINT_PERIOD = 1
 _C.SOLVER.EVALUATE_PERIOD = 1
 

@@ -12,7 +12,7 @@ def build_img_model(cfg):
 
 
 def build_text_model(cfg):
-    if cfg.MODEL.TEST_MODEL == "bigru":
+    if cfg.MODEL.TEXT_MODEL == "bigru":
         model = build_bigru(cfg)
     elif cfg.MODEL.TEXT_MODEL == "bert":
         model = build_bert(cfg)
