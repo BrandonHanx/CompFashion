@@ -67,7 +67,8 @@ def main():
     cfg.freeze()
 
     model = build_model(cfg)
-    model.to(cfg.MODEL.DEVICE)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model.to(device)
 
     output_dir = os.path.join("./output", args.config_file[8:-5])
     checkpointer = Checkpointer(model, save_dir=output_dir)
@@ -80,20 +81,21 @@ def main():
         makedir(output_folder)
         output_folders.append(output_folder)
 
+    logger = setup_logger(
+        "CompFashion", os.path.join(output_dir, "inference"), get_rank()
+    )
     data_loaders_val = build_data_loader(
         cfg, is_train=False, is_distributed=distributed
     )
     for output_folder, dataset_name, data_loader_val in zip(
         output_folders, dataset_names, data_loaders_val
     ):
-        logger = setup_logger("CompFashion", output_folder, get_rank())
         logger.info("Using {} GPUs".format(num_gpus))
-        logger.info(cfg)
 
         inference(
             model,
             data_loader_val,
-            device=cfg.MODEL.DEVICE,
+            device=device,
             output_folder=output_folder,
             save_data=True,
         )

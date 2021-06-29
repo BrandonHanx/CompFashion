@@ -8,7 +8,7 @@ __all__ = ["build_norm_layer", "build_loss_func"]
 class NormalizationLayer(nn.Module):
     """Class for normalization layer."""
 
-    def __init__(self, normalize_scale=1.0, learn_scale=True):
+    def __init__(self, normalize_scale=4.0, learn_scale=True):
         super().__init__()
         self.norm_s = float(normalize_scale)
         if learn_scale:

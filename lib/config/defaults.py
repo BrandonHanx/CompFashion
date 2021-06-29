@@ -72,7 +72,7 @@ _C.MODEL.COMP.EMBED_DIM = 512
 # Normalization Layer
 # -----------------------------------------------------------------------------
 _C.MODEL.NORM = CN()
-_C.MODEL.NORM.SCALE = 0.4
+_C.MODEL.NORM.SCALE = 4.0
 _C.MODEL.NORM.LEARNABLE = True
 
 # -----------------------------------------------------------------------------

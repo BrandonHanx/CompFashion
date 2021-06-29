@@ -121,6 +121,8 @@ def do_train(
                     )
                 )
 
+        #             break
+
         scheduler.step()
 
         if epoch % evaluate_period == 0:

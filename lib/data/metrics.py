@@ -63,7 +63,7 @@ def evaluation(
             np.savez(
                 data_dir,
                 g_ids=g_ids.cpu().numpy(),
-                q_ids=q_ids.numpy(),
+                q_ids=q_ids.cpu().numpy(),
                 similarity=similarity.cpu().numpy(),
                 g_feats=g_feats.cpu().numpy(),
                 q_feats=q_feats.cpu().numpy(),
