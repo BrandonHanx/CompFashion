@@ -17,13 +17,13 @@ class Model(nn.Module):
         self.loss_func = build_loss_func(cfg)
 
     def extract_img_feature(self, imgs):
-        raise self.img_model(imgs)
+        return self.img_model(imgs)
 
     def extract_text_feature(self, texts, text_lengths):
-        raise self.text_model(texts, text_lengths)
+        return self.text_model(texts, text_lengths)
 
     def compose_img_text_features(self, img_feats, text_feats):
-        raise self.comp_model(img_feats, text_feats)
+        return self.comp_model(img_feats, text_feats)
 
     def compose_img_text(self, imgs, texts, text_lengths):
         img_feats = self.extract_img_feature(imgs)

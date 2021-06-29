@@ -93,11 +93,9 @@ def main():
         inference(
             model,
             data_loader_val,
-            dataset_name=dataset_name,
             device=cfg.MODEL.DEVICE,
             output_folder=output_folder,
             save_data=True,
-            rerank=False,
         )
         synchronize()
 

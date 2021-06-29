@@ -57,7 +57,7 @@ def do_train(
     iteration = arguments["iteration"]
     distributed = arguments["distributed"]
 
-    best_top1 = 0.0
+    best_topk = 0.0
     start_training_time = time.time()
     end = time.time()
 
@@ -75,11 +75,14 @@ def do_train(
             iteration += 1
             arguments["iteration"] = iteration
 
-            for k, v in batch_data.items():
-                if not k == "meta_info":
-                    batch_data[k] = v.to(device)
+            imgs_query = batch_data["source_images"].to(device)
+            mod_texts = batch_data["texts"].to(device)
+            text_lengths = batch_data["text_lengths"].to(device)
+            imgs_target = batch_data["target_images"].to(device)
 
-            loss_dict = model(batch_data)
+            loss_dict = model.compute_loss(
+                imgs_query, mod_texts, text_lengths, imgs_target
+            )
             losses = sum(loss for loss in loss_dict.values())
 
             # reduce losses over all GPUs for logging purposes
@@ -120,10 +123,13 @@ def do_train(
         scheduler.step()
 
         if epoch % evaluate_period == 0:
-            top1 = inference(model, data_loader_val[0], save_data=False, rerank=False)
-            meters.update(top1=top1)
-            if top1 > best_top1:
-                best_top1 = top1
+            topk = 0.0
+            for loader in data_loader_val:
+                topk += inference(model, loader, save_data=False)
+            topk /= 3.0
+            meters.update(topk=topk)
+            if topk > best_topk:
+                best_topk = topk
                 checkpointer.save("best", **arguments)
 
         if epoch % checkpoint_period == 0:

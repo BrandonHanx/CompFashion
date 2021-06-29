@@ -21,11 +21,18 @@ from lib.utils.logger import setup_logger
 from lib.utils.metric_logger import MetricLogger, TensorboardLogger
 
 
-def set_random_seed(seed=0):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+def set_random_seed(random_seed=0):
+    if random_seed == -1:
+        random_seed = np.random.randint(100000)
+        print("RANDOM SEED: {}".format(random_seed))
+
+    random.seed(random_seed)
+    torch.manual_seed(random_seed)
+    torch.cuda.manual_seed_all(random_seed)
+    np.random.seed(random_seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    return random_seed
 
 
 def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard):
@@ -40,7 +47,7 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
         is_distributed=distributed,
     )
     model = build_model(cfg)
-    device = torch.device(cfg.MODEL.DEVICE)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
 
     optimizer = make_optimizer(cfg, model)
@@ -103,8 +110,6 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
 
 
 def main():
-    set_random_seed()
-
     parser = argparse.ArgumentParser(description="PyTorch Person Search Training")
     parser.add_argument(
         "--config-file",
@@ -136,8 +141,10 @@ def main():
         action="store_true",
         default=False,
     )
-
+    parser.add_argument("--random_seed", type=int, default=0, help="Random seed value")
     args = parser.parse_args()
+
+    set_random_seed(args.random_seed)
 
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     args.distributed = num_gpus > 1

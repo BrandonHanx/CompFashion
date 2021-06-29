@@ -2,28 +2,42 @@ import datetime
 import logging
 import os
 import time
-from collections import defaultdict
 
 import torch
 from tqdm import tqdm
 
-from lib.data.metrics import evaluation_common, evaluation_cross
+from lib.data.metrics import evaluation
 from lib.utils.comm import all_gather, is_main_process, synchronize
 
 
-def compute_on_dataset(model, data_loader, device):
+def compute_on_dataset(model, data_loader, device, batch_size):
     model.eval()
-    results_dict = defaultdict(list)
-    for batch_data in tqdm(data_loader):
-        for k, v in batch_data.items():
-            if not k == "meta_info":
-                batch_data[k] = v.to(device)
+    query_feats, query_ids, gallery_feats = [], [], []
 
+    for batch_data in tqdm(data_loader):
+        imgs = batch_data["source_images"].to(device)
+        texts = batch_data["texts"].to(device)
+        text_lengths = batch_data["text_lengths"].to(device)
+        query_ids.append(batch_data["meta_info"]["target_img_id"])
         with torch.no_grad():
-            comp_feature, target_feature = model(batch_data)
-        for result in output:
-            for img_id, pred in zip(image_ids, result):
-                results_dict[img_id].append(pred)
+            query_feat = model.norm_layer(
+                model.compose_img_text(imgs, texts, text_lengths)
+            )
+            query_feats.append(query_feat)
+
+    for imgs in tqdm(data_loader.get_all_imgs(batch_size)):
+        imgs = imgs.to(device)
+        with torch.no_grad():
+            gallery_feat = model.norm_layer(model.extract_img_feature(imgs))
+            gallery_feats.append(gallery_feat)
+
+    results_dict = dict(
+        query_feats=query_feats,
+        query_ids=query_ids,
+        gallery_feats=gallery_feats,
+        gallery_ids=data_loader.all_img_ids.values(),
+    )
+
     return results_dict
 
 
@@ -49,16 +63,14 @@ def _accumulate_predictions_from_multiple_gpus(predictions_per_gpu):
 def inference(
     model,
     data_loader,
-    dataset_name="cuhkpedes-test",
     device="cuda",
     output_folder="",
     save_data=True,
-    rerank=True,
 ):
     logger = logging.getLogger("CompFashion.inference")
     dataset = data_loader.dataset
     logger.info(
-        "Start evaluation on {} dataset({} images).".format(dataset_name, len(dataset))
+        "Start evaluation on {} dataset({} images).".format(dataset.name, len(dataset))
     )
 
     predictions = None
@@ -87,34 +99,9 @@ def inference(
         if not is_main_process():
             return
 
-    if not hasattr(model.embed_model, "inference_mode"):
-        return evaluation_common(
-            dataset=dataset,
-            predictions=predictions,
-            output_folder=output_folder,
-            save_data=save_data,
-            rerank=rerank,
-            topk=[1, 5, 10],
-        )
-
-    if model.embed_model.inference_mode == "common":
-        return evaluation_common(
-            dataset=dataset,
-            predictions=predictions,
-            output_folder=output_folder,
-            save_data=save_data,
-            rerank=rerank,
-            topk=[1, 5, 10],
-        )
-
-    if model.embed_model.inference_mode == "cross":
-        assert hasattr(model.embed_model, "get_similarity")
-        sim_calculator = model.embed_model.get_similarity
-        return evaluation_cross(
-            dataset=dataset,
-            predictions=predictions,
-            output_folder=output_folder,
-            save_data=save_data,
-            sim_calculator=sim_calculator,
-            topk=[1, 5, 10],
-        )
+    return evaluation(
+        predictions=predictions,
+        output_folder=output_folder,
+        save_data=save_data,
+        topk=[1, 5, 10, 50],
+    )
