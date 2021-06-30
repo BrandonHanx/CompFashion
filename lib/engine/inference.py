@@ -59,7 +59,8 @@ def inference(
     data_loader,
     device="cuda",
     output_folder="",
-    save_data=True,
+    save_data=False,
+    rerank=False,
 ):
     logger = logging.getLogger("CompFashion.inference")
     dataset = data_loader.dataset
@@ -97,5 +98,6 @@ def inference(
         predictions=predictions,
         output_folder=output_folder,
         save_data=save_data,
-        topk=[1, 5, 10, 50],
+        topk=torch.tensor([1, 5, 10, 50]),
+        rerank=rerank,
     )

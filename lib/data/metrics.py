@@ -34,11 +34,39 @@ def rank(similarity, q_ids, g_ids, topk=[1, 5, 10, 50], get_mAP=True):
     return all_cmc, mAP, indices
 
 
+def jaccard(a_list, b_list):
+    return float(len(set(a_list) & set(b_list))) / float(len(set(a_list) | set(b_list)))
+
+
+def jaccard_mat(row_nn, col_nn, shape):
+    jaccard_sim = np.zeros(shape)
+    # FIXME: need optimization
+    for i in range(min(shape[0], row_nn.shape[0])):
+        for j in range(min(shape[1], col_nn.shape[0])):
+            jaccard_sim[i, j] = jaccard(row_nn[i], col_nn[j])
+    return torch.from_numpy(jaccard_sim)
+
+
+def k_reciprocal(q_feats, g_feats, neighbor_num=5, alpha=0.5):
+    qg_sim = torch.matmul(q_feats, g_feats.t())
+    gg_sim = torch.matmul(g_feats, g_feats.t())
+
+    qg_indices = torch.argsort(qg_sim, dim=1, descending=True)
+    gg_indices = torch.argsort(gg_sim, dim=1, descending=True)
+
+    qg_nn = qg_indices[:, :neighbor_num]
+    gg_nn = gg_indices[:, :neighbor_num]
+
+    jaccard_sim = jaccard_mat(qg_nn.cpu().numpy(), gg_nn.cpu().numpy(), qg_sim.shape)
+    return (1.0 - alpha) * qg_sim + alpha * jaccard_sim
+
+
 def evaluation(
     predictions,
     output_folder,
     topk,
-    save_data=True,
+    save_data=False,
+    rerank=False,
 ):
     logger = logging.getLogger("CompFashion.inference")
     data_dir = os.path.join(output_folder, "inference_data.npz")
@@ -57,23 +85,27 @@ def evaluation(
         g_feats = torch.cat(predictions["gallery_feats"], dim=0)
         q_feats = torch.cat(predictions["query_feats"], dim=0)
 
-        similarity = torch.matmul(q_feats, g_feats.t())
-
-        if save_data:
-            np.savez(
-                data_dir,
-                g_ids=g_ids.cpu().numpy(),
-                q_ids=q_ids.cpu().numpy(),
-                similarity=similarity.cpu().numpy(),
-                g_feats=g_feats.cpu().numpy(),
-                q_feats=q_feats.cpu().numpy(),
-            )
-
-    topk = torch.tensor(topk)
-
+    similarity = torch.matmul(q_feats, g_feats.t())
     cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
     results = cmc.t().cpu().numpy()
     for k, result in zip(topk, results):
         logger.info("R@{}: {}".format(k, result))
+
+    if rerank:
+        similarity = k_reciprocal(q_feats, g_feats)
+        cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
+        results = cmc.t().cpu().numpy()
+        for k, result in zip(topk, results):
+            logger.info("Rerank R@{}: {}".format(k, result))
+
+    if save_data and predictions is not None:
+        np.savez(
+            data_dir,
+            g_ids=g_ids.cpu().numpy(),
+            q_ids=q_ids.cpu().numpy(),
+            similarity=similarity.cpu().numpy(),
+            g_feats=g_feats.cpu().numpy(),
+            q_feats=q_feats.cpu().numpy(),
+        )
 
     return cmc[2]

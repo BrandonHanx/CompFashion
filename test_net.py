@@ -36,7 +36,7 @@ def main():
         type=str,
     )
     parser.add_argument(
-        "--local_rank",
+        "--local-rank",
         default=0,
         type=int,
     )
@@ -47,9 +47,16 @@ def main():
         nargs=argparse.REMAINDER,
     )
     parser.add_argument(
-        "--load-result",
-        help="Use saved reslut as prediction",
+        "--save-data",
+        help="Save predicted results",
         action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "--rerank",
+        help="Use k-reciprocal post-processing",
+        action="store_true",
+        default=False,
     )
 
     args = parser.parse_args()
@@ -97,7 +104,8 @@ def main():
             data_loader_val,
             device=device,
             output_folder=output_folder,
-            save_data=True,
+            save_data=args.save_data,
+            rerank=args.rerank,
         )
         synchronize()
 
