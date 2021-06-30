@@ -36,7 +36,7 @@ def build_transform(name, is_train):
     return transform
 
 
-def build_dataset(dataset_list, dataset_catalog, is_train=True):
+def build_dataset(dataset_list, dataset_catalog, is_train=True, vocab="glove"):
     if not isinstance(dataset_list, (list, tuple)):
         raise RuntimeError(
             "dataset_list should be a list of strings, got {}".format(dataset_list)
@@ -47,6 +47,7 @@ def build_dataset(dataset_list, dataset_catalog, is_train=True):
         factory = getattr(D, data["factory"])
         args = data["args"]
         args["transform"] = build_transform(dataset_name, is_train)
+        args["vocab"] = vocab
 
         # make dataset from factory
         dataset = factory(**args)
@@ -102,7 +103,7 @@ def build_data_loader(cfg, is_train=True, is_distributed=False):
         shuffle = is_distributed
 
     dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
-    datasets = build_dataset(dataset_list, DatasetCatalog, is_train)
+    datasets = build_dataset(dataset_list, DatasetCatalog, is_train, cfg.MODEL.VOCAB)
 
     data_loaders = []
     for dataset in datasets:

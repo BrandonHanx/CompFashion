@@ -2,26 +2,28 @@ import PIL
 import torch
 import torch.utils.data
 
-from lib.utils.directory import memcache, read_json
+from lib.utils.directory import memcache, np_loader, read_json
 
 
 class FashionIQ(torch.utils.data.Dataset):
     """FashionIQ dataset."""
 
     def __init__(
-        self, path, split="train", cat_type="dress", transform=None, text_feat="glove"
+        self, path, split="train", cat_type="dress", transform=None, vocab="glove"
     ):
         super().__init__()
         self.path = path
         self.transform = transform
         self.split = split
         self.data = []
-        self.name = f"FashionIQ.{cat_type}.{text_feat}.{split}"
+        self.name = f"FashionIQ.{cat_type}.dict.{split}"
 
-        caps_file = f"{path}/captions/cap.{cat_type}.{text_feat}.{split}.pkl"
+        caps_file = f"{path}/captions/cap.{cat_type}.dict.{split}.pkl"
         split_file = f"{path}/image_splits/split.{cat_type}.{split}.json"
+        vocab_file = f"{path}/captions/{vocab}.npy"
 
         self.data = memcache(caps_file)
+        self.vocab = np_loader(vocab_file)
         self.all_img_names = read_json(split_file)
         self.all_img_ids = {
             self.all_img_names[x]: x for x in range(len(self.all_img_names))
@@ -37,7 +39,7 @@ class FashionIQ(torch.utils.data.Dataset):
         }
         source_image = self.get_img(source_img_name)
         target_image = self.get_img(target_img_name)
-        text = self.data[idx]["wv"]
+        text = self.vocab[self.data[idx]["wv"]]
 
         return text, source_image, target_image, meta_info
 

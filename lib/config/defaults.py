@@ -34,6 +34,7 @@ _C.MODEL.IMG_MODEL = "resnet50"
 _C.MODEL.TEXT_MODEL = "bigru"
 _C.MODEL.COMP_MODEL = "tirg"
 _C.MODEL.LOSS = "bbc"
+_C.MODEL.VOCAB = "glove"
 
 # -----------------------------------------------------------------------------
 # GRU
