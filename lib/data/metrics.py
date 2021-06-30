@@ -38,27 +38,29 @@ def jaccard(a_list, b_list):
     return float(len(set(a_list) & set(b_list))) / float(len(set(a_list) | set(b_list)))
 
 
-def jaccard_mat(row_nn, col_nn, shape):
-    jaccard_sim = np.zeros(shape)
+def jaccard_mat(row_nn, col_nn):
+    jaccard_sim = np.zeros(row_nn.shape[0], col_nn.shape[0])
     # FIXME: need optimization
-    for i in range(min(shape[0], row_nn.shape[0])):
-        for j in range(min(shape[1], col_nn.shape[0])):
+    for i in range(row_nn.shape[0]):
+        for j in range(col_nn.shape[0]):
             jaccard_sim[i, j] = jaccard(row_nn[i], col_nn[j])
     return torch.from_numpy(jaccard_sim)
 
 
-def k_reciprocal(q_feats, g_feats, neighbor_num=5, alpha=0.5):
-    qg_sim = torch.matmul(q_feats, g_feats.t())
-    gg_sim = torch.matmul(g_feats, g_feats.t())
+def k_reciprocal(q_feats, g_feats, neighbor_num=10, alpha=0.3):
+    qg_sim = torch.matmul(q_feats, g_feats.t())  # q * g
+    gg_sim = torch.matmul(g_feats, g_feats.t())  # g * g
 
     qg_indices = torch.argsort(qg_sim, dim=1, descending=True)
     gg_indices = torch.argsort(gg_sim, dim=1, descending=True)
 
-    qg_nn = qg_indices[:, :neighbor_num]
-    gg_nn = gg_indices[:, :neighbor_num]
+    qg_nn = qg_indices[:, :neighbor_num]  # q * n
+    gg_nn = gg_indices[:, :neighbor_num]  # g * n
 
-    jaccard_sim = jaccard_mat(qg_nn.cpu().numpy(), gg_nn.cpu().numpy(), qg_sim.shape)
-    return (1.0 - alpha) * qg_sim + alpha * jaccard_sim
+    jaccard_sim = jaccard_mat(qg_nn.cpu().numpy(), gg_nn.cpu().numpy())  # q * g
+    jaccard_sim = jaccard_sim.to(qg_sim.device)
+    similarity = (1.0 - alpha) * qg_sim + alpha * jaccard_sim
+    return similarity  # q * g
 
 
 def evaluation(
