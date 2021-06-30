@@ -61,6 +61,31 @@ class BiGRU(nn.Module):
                 nn.init.constant(m.bias.data, 0)
 
 
+class BiGRUwithEmbeddingLayer(BiGRU):
+    def __init__(
+        self,
+        hidden_dim,
+        vocab_size,
+        embed_size,
+        num_layers,
+        drop_out,
+    ):
+        super().__init__(
+            hidden_dim,
+            vocab_size,
+            embed_size,
+            num_layers,
+            drop_out,
+        )
+        self.embed = nn.Embedding(vocab_size, embed_size, padding_idx=0)
+
+    def forward(self, text, text_length):
+        text = self.embed(text)
+        gru_out = self.gru_out(text, text_length)
+        gru_out, _ = torch.max(gru_out, dim=1)
+        return gru_out
+
+
 def build_bigru(cfg):
     hidden_dim = cfg.MODEL.GRU.NUM_UNITS
     vocab_size = cfg.MODEL.GRU.VOCABULARY_SIZE
@@ -68,13 +93,22 @@ def build_bigru(cfg):
     num_layer = cfg.MODEL.GRU.NUM_LAYER
     drop_out = cfg.MODEL.GRU.DROPOUT
 
-    model = BiGRU(
-        hidden_dim,
-        vocab_size,
-        embed_size,
-        num_layer,
-        drop_out,
-    )
+    if cfg.MODEL.VOCAB == "init":
+        model = BiGRUwithEmbeddingLayer(
+            hidden_dim,
+            vocab_size,
+            embed_size,
+            num_layer,
+            drop_out,
+        )
+    else:
+        model = BiGRU(
+            hidden_dim,
+            vocab_size,
+            embed_size,
+            num_layer,
+            drop_out,
+        )
 
     if cfg.MODEL.GRU.FREEZE:
         for m in [model.embed, model.gru]:

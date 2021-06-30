@@ -1,3 +1,4 @@
+import numpy as np
 import PIL
 import torch
 import torch.utils.data
@@ -19,11 +20,15 @@ class FashionIQ(torch.utils.data.Dataset):
         self.name = f"FashionIQ.{cat_type}.dict.{split}"
 
         caps_file = f"{path}/captions/cap.{cat_type}.dict.{split}.json"
-        split_file = f"{path}/image_splits/split.{cat_type}.{split}.json"
-        vocab_file = f"{path}/captions/{vocab}_vocab.npy"
-
         self.data = read_json(caps_file)
-        self.vocab = np_loader(vocab_file)
+
+        self.vocab = None
+        if vocab != "init":
+            vocab_file = f"{path}/captions/{vocab}_vocab.npy"
+            self.vocab = np_loader(vocab_file)
+
+        split_file = f"{path}/image_splits/split.{cat_type}.{split}.json"
+
         self.all_img_names = read_json(split_file)
         self.all_img_ids = {
             self.all_img_names[x]: x for x in range(len(self.all_img_names))
@@ -39,7 +44,10 @@ class FashionIQ(torch.utils.data.Dataset):
         }
         source_image = self.get_img(source_img_name)
         target_image = self.get_img(target_img_name)
-        text = self.vocab[self.data[idx]["wv"]]
+        if self.vocab is None:
+            text = np.array(self.data[idx]["wv"])
+        else:
+            text = self.vocab[self.data[idx]["wv"]]
 
         return text, source_image, target_image, meta_info
 
