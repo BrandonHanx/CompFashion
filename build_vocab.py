@@ -6,6 +6,13 @@ import nltk
 
 from lib.utils.directory import read_json, write_json
 
+
+def get_tokens(caption):
+    caption = caption.replace("-", " ").replace(".", "")  # Split hyphen
+    toks = nltk.tokenize.word_tokenize(caption.lower())
+    return [vocab[word] for word in toks]
+
+
 # Build vocab
 cap_files = glob("train_data/fashioniq/captions/cap*.json")
 counter = Counter()
@@ -18,13 +25,13 @@ for cap_file in cap_files:
             caption = caption.replace("-", " ").replace(".", "")
             toks = nltk.tokenize.word_tokenize(caption.lower())
             counter.update(toks)
-counter.update("and")
-print("Total Words:", len(counter))
 
-vocab = dict(zip(counter.keys(), range(1, len(counter) + 1)))  # remain for pad
+print("Total Words:", len(counter))
+vocab = dict(zip(counter.keys(), range(1, len(counter) + 2)))  # remain for pad
+vocab["inadditiontothat"] = len(counter) + 1
 
 # Save vocab
-write_json(counter, "train_data/fashioniq/captions/vocab.json")
+write_json(vocab, "train_data/fashioniq/captions/vocab.json")
 
 # Build cap file
 for cap_file in cap_files:
@@ -37,11 +44,9 @@ for cap_file in cap_files:
     # Process
     for data in cap_data:
         captions = data["captions"]
-        w2v = []
-        for caption in captions:
-            caption = caption.replace("-", " ").replace(".", "")  # Split hyphen
-            toks = nltk.tokenize.word_tokenize(caption.lower())
-            for word in toks:
-                w2v.append(vocab[word])
-        data["wv"] = w2v
+        data["wv"] = (
+            get_tokens(captions[0])
+            + [vocab["inadditiontothat"]]
+            + get_tokens(captions[1])
+        )
     write_json(cap_data, save_file)

@@ -2,7 +2,7 @@ import PIL
 import torch
 import torch.utils.data
 
-from lib.utils.directory import memcache, np_loader, read_json
+from lib.utils.directory import np_loader, read_json
 
 
 class FashionIQ(torch.utils.data.Dataset):
@@ -18,11 +18,11 @@ class FashionIQ(torch.utils.data.Dataset):
         self.data = []
         self.name = f"FashionIQ.{cat_type}.dict.{split}"
 
-        caps_file = f"{path}/captions/cap.{cat_type}.dict.{split}.pkl"
+        caps_file = f"{path}/captions/cap.{cat_type}.dict.{split}.json"
         split_file = f"{path}/image_splits/split.{cat_type}.{split}.json"
-        vocab_file = f"{path}/captions/{vocab}.npy"
+        vocab_file = f"{path}/captions/{vocab}_vocab.npy"
 
-        self.data = memcache(caps_file)
+        self.data = read_json(caps_file)
         self.vocab = np_loader(vocab_file)
         self.all_img_names = read_json(split_file)
         self.all_img_ids = {

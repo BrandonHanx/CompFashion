@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 from lib.utils.directory import read_json
 
-glove = spacy.load("en_vectors_web_lg").vocab
+glove = spacy.load("/home/ma-user/work/hanxiao/en_vectors_web_lg-2.3.0").vocab
 
 vocab = read_json("train_data/fashioniq/captions/vocab.json")
 glove_words = np.zeros((len(vocab) + 1, 300))
