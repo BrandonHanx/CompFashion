@@ -176,6 +176,21 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
+class MultiScaleResNet(ResNet):
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x_2 = self.layer2(x)
+        x_3 = self.layer3(x_2)
+        x_4 = self.layer4(x_3)
+
+        return x_2, x_3, x_4
+
+
 def remove_fc(state_dict):
     """Remove the fc layer parameters from state_dict."""
     for key in list(state_dict.keys()):
@@ -220,12 +235,20 @@ def build_resnet(cfg):
     pretrained = cfg.MODEL.RESNET.PRETRAINED
 
     model_arch = model_archs[arch]
-    model = ResNet(
-        model_arch,
-        res5_stride,
-        res5_dilation,
-        pretrained=pretrained,
-    )
+    if cfg.MODEL.COMP.METHOD in ["multi-scale"]:
+        model = MultiScaleResNet(
+            model_arch,
+            res5_stride,
+            res5_dilation,
+            pretrained=pretrained,
+        )
+    else:
+        model = ResNet(
+            model_arch,
+            res5_stride,
+            res5_dilation,
+            pretrained=pretrained,
+        )
 
     if cfg.MODEL.RESNET.FREEZE:
         for m in [model.conv1, model.bn1, model.layer1, model.layer2, model.layer3]:

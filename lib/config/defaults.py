@@ -67,8 +67,8 @@ _C.MODEL.RESNET.FREEZE = False
 # Composition
 # -----------------------------------------------------------------------------
 _C.MODEL.COMP = CN()
+_C.MODEL.COMP.METHOD = "base"
 _C.MODEL.COMP.EMBED_DIM = 512
-_C.MODEL.COMP.PROJ_LAYER = False
 
 # -----------------------------------------------------------------------------
 # Normalization Layer

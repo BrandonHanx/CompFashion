@@ -87,13 +87,22 @@ def evaluation(
         g_feats = torch.cat(predictions["gallery_feats"], dim=0)
         q_feats = torch.cat(predictions["query_feats"], dim=0)
 
-    similarity = torch.matmul(q_feats, g_feats.t())
-    cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
-    results = cmc.t().cpu().numpy()
+    if len(q_feats.shape) > 2:
+        similarity = torch.bmm(q_feats, g_feats.transpose(1, 2))
+        results = 0.0
+        for sim in similarity:
+            cmc, _ = rank(sim, q_ids, g_ids, topk, get_mAP=False)
+            results = results + cmc.t().cpu().numpy()
+        results /= len(similarity)
+    else:
+        similarity = torch.matmul(q_feats, g_feats.t())
+        cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
+        results = cmc.t().cpu().numpy()
+
     for k, result in zip(topk, results):
         logger.info("R@{}: {}".format(k, result))
 
-    if rerank:
+    if rerank:  # FIXME: don't support multi-scale
         similarity = k_reciprocal(q_feats, g_feats)
         cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
         results = cmc.t().cpu().numpy()

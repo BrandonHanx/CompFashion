@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 from .backbones import build_img_model, build_text_model
@@ -35,7 +36,22 @@ class Model(nn.Module):
         mod_img1 = self.norm_layer(mod_img1)
         img2 = self.extract_img_feature(imgs_target)
         img2 = self.norm_layer(img2)
-        assert mod_img1.shape[0] == img2.shape[0] and mod_img1.shape[1] == img2.shape[1]
+        return self.loss_func(mod_img1, img2)
+
+
+class MultiScaleModel(Model):
+    def compose_img_text(self, imgs, texts, text_lengths):
+        img_feats = self.extract_img_feature(imgs)
+        text_feats = self.extract_text_feature(texts, text_lengths)
+        return torch.stack(
+            [self.compose_img_text_features(x, text_feats) for x in img_feats]
+        )
+
+    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
+        mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
+        mod_img1 = torch.stack([self.norm_layer(x) for x in mod_img1])
+        img2 = self.extract_img_feature(imgs_target)
+        img2 = torch.stack([self.norm_layer(x) for x in img2])
         return self.loss_func(mod_img1, img2)
 
 
@@ -57,6 +73,12 @@ class ProjModel(Model):
 
 
 def build_model(cfg):
-    if cfg.MODEL.COMP.PROJ_LAYER:
-        return ProjModel(cfg)
-    return Model(cfg)
+    if cfg.MODEL.COMP.METHOD == "base":
+        model = Model(cfg)
+    elif cfg.MODEL.COMP.METHOD == "proj":
+        model = ProjModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "multi-scale":
+        model = MultiScaleModel(cfg)
+    else:
+        raise NotImplementedError
+    return model
