@@ -163,9 +163,7 @@ class ResNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        x = self.avgpool(x)
-
-        return x.squeeze()
+        return x
 
     def _init_weight(self):
         for m in self.modules():

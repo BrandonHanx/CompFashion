@@ -18,8 +18,8 @@ class Model(nn.Module):
 
     def extract_img_feature(self, imgs, single=False):
         if single:
-            return self.norm_layer(self.img_model(imgs))
-        return self.img_model(imgs)
+            return self.norm_layer(self.img_model(imgs).mean((2, 3)))
+        return self.img_model(imgs).mean((2, 3))
 
     def extract_text_feature(self, texts, text_lengths):
         return self.text_model(texts, text_lengths)
@@ -88,17 +88,26 @@ class ProjModel(Model):
         self.img_proj_layer = nn.Linear(
             self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
-        self.text_proj_layer = nn.Linear(
-            self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        self.text_proj_layer = nn.Sequential(
+            nn.Dropout(p=0.1),
+            nn.Linear(self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM),
         )
 
+    def norm_and_avgpool(self, x):
+        return self.norm_layer(self.img_proj_layer(x.mean((2, 3))))
+
     def extract_img_feature(self, imgs, single=False):
+        img_feats = self.img_model(imgs)
         if single:
-            return self.norm_layer(self.img_proj_layer(self.img_model(imgs)))
-        return self.img_proj_layer(self.img_model(imgs))
+            return self.norm_and_avgpool(img_feats)
+        return img_feats
 
     def extract_text_feature(self, texts, text_lengths):
         return self.text_proj_layer(self.text_model(texts, text_lengths))
+
+    def compose_img_text_features(self, img_feats, text_feats):
+        comp_feats = self.comp_model(img_feats, text_feats)
+        return self.norm_and_avgpool(comp_feats)
 
 
 def build_model(cfg):

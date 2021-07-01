@@ -72,8 +72,8 @@ class DisentangledTransformer(nn.Module):
 
 def build_cosmo(cfg):
     embed_dim = cfg.MODEL.COMP.EMBED_DIM
-    global_styler = GlobalStyleTransformer(embed_dim, embed_dim)
+    global_styler = GlobalStyleTransformer(2048, embed_dim)
     cosmo = DisentangledTransformer(
-        embed_dim, embed_dim, num_heads=8, global_styler=global_styler
+        2048, embed_dim, num_heads=8, global_styler=global_styler
     )
     return cosmo
