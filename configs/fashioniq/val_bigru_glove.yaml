@@ -9,7 +9,7 @@ MODEL:
     NUM_UNITS: 1024
     VOCABULARY_SIZE: 300
   COMP:
-    EMBED_DIM: 2048
+    EMBED_DIM: 512
     METHOD: "multi-scale"
 INPUT:
   HEIGHT: 224

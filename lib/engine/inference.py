@@ -20,9 +20,9 @@ def compute_on_dataset(model, data_loader, device):
         text_lengths = batch_data["text_lengths"].to(device)
         query_ids.extend(batch_data["meta_info"]["target_image_ids"])
         with torch.no_grad():
-            query_feat = model.norm_layer(
-                model.compose_img_text(imgs, texts, text_lengths)
-            )
+            query_feat = model.compose_img_text(imgs, texts, text_lengths)
+            if isinstance(query_feat, list):
+                query_feat = torch.cat(query_feat, dim=-1)
             query_feats.append(query_feat)
 
     for imgs in tqdm(
@@ -30,7 +30,9 @@ def compute_on_dataset(model, data_loader, device):
     ):
         imgs = imgs.to(device)
         with torch.no_grad():
-            gallery_feat = model.norm_layer(model.extract_img_feature(imgs))
+            gallery_feat = model.extract_img_feature(imgs, single=True)
+            if isinstance(gallery_feat, list):
+                gallery_feat = torch.cat(gallery_feat, dim=-1)
             gallery_feats.append(gallery_feat)
 
     results_dict = dict(

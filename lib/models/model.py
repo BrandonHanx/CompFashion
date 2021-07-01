@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 from .backbones import build_img_model, build_text_model
@@ -13,18 +12,20 @@ class Model(nn.Module):
         super().__init__()
         self.img_model = build_img_model(cfg)
         self.text_model = build_text_model(cfg)
-        self.comp_model = build_composition(cfg)
+        self.comp_model = build_composition(cfg=cfg)
         self.norm_layer = build_norm_layer(cfg)
         self.loss_func = build_loss_func(cfg)
 
-    def extract_img_feature(self, imgs):
+    def extract_img_feature(self, imgs, single=False):
+        if single:
+            return self.norm_layer(self.img_model(imgs))
         return self.img_model(imgs)
 
     def extract_text_feature(self, texts, text_lengths):
         return self.text_model(texts, text_lengths)
 
     def compose_img_text_features(self, img_feats, text_feats):
-        return self.comp_model(img_feats, text_feats)
+        return self.norm_layer(self.comp_model(img_feats, text_feats))
 
     def compose_img_text(self, imgs, texts, text_lengths):
         img_feats = self.extract_img_feature(imgs)
@@ -33,25 +34,51 @@ class Model(nn.Module):
 
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
-        mod_img1 = self.norm_layer(mod_img1)
-        img2 = self.extract_img_feature(imgs_target)
-        img2 = self.norm_layer(img2)
+        img2 = self.extract_img_feature(imgs_target, single=True)
         return self.loss_func(mod_img1, img2)
 
 
-class MultiScaleModel(Model):
+class MultiScaleModel(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        self.img_model = build_img_model(cfg)
+        self.text_model = build_text_model(cfg)
+        self.norm_layer = build_norm_layer(cfg)
+        self.loss_func = build_loss_func(cfg)
+
+        self.text_proj_layer = nn.Linear(
+            self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
+        self.comp_model = nn.ModuleList(
+            [
+                build_composition(cfg=cfg, img_channel=x)
+                for x in self.img_model.out_channels
+            ]
+        )
+
+    def extract_img_feature(self, imgs, single=False):
+        img_feats = self.img_model(imgs)
+        if single:
+            return [self.norm_layer(x.mean((2, 3))) for x in img_feats]
+        return img_feats
+
+    def extract_text_feature(self, texts, text_lengths):
+        return self.text_proj_layer(self.text_model(texts, text_lengths))
+
+    def compose_img_text_features(self, img_feats, text_feats, i):
+        return self.norm_layer(self.comp_model[i](img_feats, text_feats))
+
     def compose_img_text(self, imgs, texts, text_lengths):
         img_feats = self.extract_img_feature(imgs)
         text_feats = self.extract_text_feature(texts, text_lengths)
-        return torch.stack(
-            [self.compose_img_text_features(x, text_feats) for x in img_feats]
-        )
+        return [
+            self.compose_img_text_features(x, text_feats, i)
+            for i, x in enumerate(img_feats)
+        ]
 
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
-        mod_img1 = torch.stack([self.norm_layer(x) for x in mod_img1])
-        img2 = self.extract_img_feature(imgs_target)
-        img2 = torch.stack([self.norm_layer(x) for x in img2])
+        img2 = self.extract_img_feature(imgs_target, single=True)
         return self.loss_func(mod_img1, img2)
 
 
@@ -65,7 +92,9 @@ class ProjModel(Model):
             self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
 
-    def extract_img_feature(self, imgs):
+    def extract_img_feature(self, imgs, single=False):
+        if single:
+            return self.norm_layer(self.img_proj_layer(self.img_model(imgs)))
         return self.img_proj_layer(self.img_model(imgs))
 
     def extract_text_feature(self, texts, text_lengths):

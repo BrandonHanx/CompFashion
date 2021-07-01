@@ -177,6 +177,16 @@ class ResNet(nn.Module):
 
 
 class MultiScaleResNet(ResNet):
+    def __init__(
+        self,
+        model_arch,
+        res5_stride=2,
+        res5_dilation=1,
+        pretrained=True,
+    ):
+        super().__init__(model_arch, res5_stride, res5_dilation, pretrained)
+        self.out_channels = [512, 1024, 2048]
+
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
