@@ -12,7 +12,9 @@ class Model(nn.Module):
         super().__init__()
         self.img_model = build_img_model(cfg)
         self.text_model = build_text_model(cfg)
-        self.comp_model = build_composition(cfg=cfg)
+        self.comp_model = build_composition(
+            cfg=cfg, img_channel=self.img_model.out_channels
+        )
         self.norm_layer = build_norm_layer(cfg)
         self.loss_func = build_loss_func(cfg)
 
