@@ -14,22 +14,24 @@ class FushionBlock(nn.Module):
         x = self.bn(x)
         x = self.activation(x)
         x = self.fc(x)
+        return x
 
 
 class ErrorEncodingBlock(nn.Module):
     def __init__(self, img_dim):
         super().__init__()
+        half = int(img_dim / 2)
         self.sub_block_1 = nn.Sequential(
-            nn.Linear(img_dim, img_dim / 2),
-            nn.BatchNorm1d(img_dim / 2),
+            nn.Linear(img_dim, half),
+            nn.BatchNorm1d(half),
             nn.LeakyReLU(),
         )
         self.sub_block_2 = nn.Sequential(
-            nn.Linear(img_dim / 2, img_dim / 2),
-            nn.BatchNorm1d(img_dim / 2),
+            nn.Linear(half, half),
+            nn.BatchNorm1d(half),
             nn.LeakyReLU(),
         )
-        self.fc_3 = nn.Linear(img_dim / 2, img_dim)
+        self.fc_3 = nn.Linear(half, img_dim)
 
     def forward(self, x):
         residual = x
@@ -60,6 +62,7 @@ class GatingBlock(nn.Module):
 
 class RTIC(nn.Module):
     def __init__(self, text_dim, img_dim, n=4):
+        super().__init__()
         self.fusion_block = FushionBlock(text_dim, img_dim)
         self.error_encoding_blocks = nn.ModuleList([ErrorEncodingBlock(img_dim)] * n)
         self.gating_block = GatingBlock(img_dim)
