@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 from .backbones import build_img_model, build_text_model
@@ -61,7 +62,9 @@ class MultiScaleModel(nn.Module):
     def extract_img_feature(self, imgs, single=False):
         img_feats = self.img_model(imgs)
         if single:
-            return [self.norm_layer(x.mean((2, 3))) for x in img_feats]
+            return torch.cat(
+                [self.norm_layer(x.mean((2, 3))) for x in img_feats], dim=-1
+            )
         return img_feats
 
     def extract_text_feature(self, texts, text_lengths):
@@ -81,7 +84,7 @@ class MultiScaleModel(nn.Module):
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, single=True)
-        return self.loss_func(mod_img1, img2)
+        return self.loss_func(torch.cat(mod_img1, dim=-1), torch.cat(img2, dim=-1))
 
 
 class ProjModel(Model):
