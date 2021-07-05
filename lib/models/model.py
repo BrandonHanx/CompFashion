@@ -115,6 +115,35 @@ class ProjModel(Model):
         return self.norm_and_avgpool(comp_feats)
 
 
+class TransModel(Model):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.img_proj_layer = nn.Linear(
+            self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
+        self.text_proj_layer = nn.Linear(
+            cfg.MODEL.GRU.VOCABULARY_SIZE, cfg.MODEL.COMP.EMBED_DIM
+        )
+
+    def extract_img_feature(self, imgs, single=False):
+        img_feats = self.img_model(imgs).flatten(start_dim=-2, end_dim=-1)
+        img_feats = self.img_proj_layer(img_feats)
+        if single:
+            return self.norm_layer(img_feats.mean(-1))
+        return img_feats
+
+    def extract_text_feature(self, texts):
+        return self.text_proj_layer(self.text_model(texts))
+
+    def compose_img_text_features(self, img_feats, text_feats, text_lengths):
+        return self.norm_layer(self.comp_model(img_feats, text_feats, text_lengths))
+
+    def compose_img_text(self, imgs, texts, text_lengths):
+        img_feats = self.extract_img_feature(imgs)
+        text_feats = self.extract_text_feature(texts)
+        return self.compose_img_text_features(img_feats, text_feats, text_lengths)
+
+
 def build_model(cfg):
     if cfg.MODEL.COMP.METHOD == "base":
         model = Model(cfg)
@@ -122,6 +151,8 @@ def build_model(cfg):
         model = ProjModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "multi-scale":
         model = MultiScaleModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "trans":
+        model = TransModel(cfg)
     else:
         raise NotImplementedError
     return model
