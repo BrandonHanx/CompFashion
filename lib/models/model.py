@@ -126,10 +126,12 @@ class TransModel(Model):
         )
 
     def extract_img_feature(self, imgs, single=False):
-        img_feats = self.img_model(imgs).flatten(start_dim=-2, end_dim=-1)
+        img_feats = (
+            self.img_model(imgs).flatten(start_dim=-2, end_dim=-1).transpose(-2, -1)
+        )
         img_feats = self.img_proj_layer(img_feats)
         if single:
-            return self.norm_layer(img_feats.mean(-1))
+            return self.norm_layer(img_feats.mean(-2))
         return img_feats
 
     def extract_text_feature(self, texts):
