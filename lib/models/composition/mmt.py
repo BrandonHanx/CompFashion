@@ -61,7 +61,7 @@ class MMT(nn.Module):
             seq.transpose(0, 1), src_key_padding_mask=key_padding_mask
         )  # (49 + 30 + 2) x b x 512
 
-        return seq[1 : 1 + self.patch_seq_length].mean(0)
+        return seq[1 : 1 + self.patch_seq_length].transpose(0, 1)
 
 
 def build_mmt(cfg):

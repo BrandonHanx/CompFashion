@@ -31,13 +31,35 @@ class BatchBasedClassificationLoss(nn.Module):
         return loss
 
 
+class KLDiv(nn.Module):
+    @staticmethod
+    def forward(pred, label):
+        return {
+            "kl_div": F.kl_div(
+                F.log_softmax(pred, -1), F.softmax(label, -1), reduction="batchmean"
+            )
+        }
+
+
 def build_norm_layer(cfg):
     return NormalizationLayer(cfg.MODEL.NORM.SCALE, cfg.MODEL.NORM.LEARNABLE)
 
 
 def build_loss_func(cfg):
-    if cfg.MODEL.LOSS == "bbc":
-        loss_func = BatchBasedClassificationLoss()
-    else:
-        raise NotImplementedError
-    return loss_func
+    def build_loss_func_(loss_type):
+        if loss_type == "bbc":
+            loss_func = BatchBasedClassificationLoss()
+        elif loss_type == "kl_div":
+            loss_func = KLDiv()
+        else:
+            raise NotImplementedError
+        return loss_func
+
+    loss_types = cfg.MODEL.LOSS.split("+")
+    if len(loss_types) == 1:
+        return build_loss_func_(loss_types[0])
+
+    loss_funcs = []
+    for loss_type in loss_types:
+        loss_funcs.append(build_loss_func_(loss_type))
+    return nn.ModuleList(loss_funcs)

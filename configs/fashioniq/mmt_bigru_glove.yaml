@@ -2,7 +2,7 @@ MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "none"
   COMP_MODEL: "mmt"
-  LOSS: "bbc"
+  LOSS: "bbc+kl_div"
   VOCAB: "glove"
   GRU:
     EMBEDDING_SIZE: 512
