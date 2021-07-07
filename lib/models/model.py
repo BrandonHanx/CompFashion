@@ -135,10 +135,7 @@ class TransModel(Model):
             self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
         self.text_proj_layer = nn.Linear(
-            cfg.MODEL.GRU.VOCABULARY_SIZE, cfg.MODEL.COMP.EMBED_DIM
-        )
-        self.pseudoclass_layer = nn.Linear(
-            cfg.MODEL.COMP.EMBED_DIM, cfg.MODEL.COMP.EMBED_DIM
+            self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
 
     def extract_img_feature(self, imgs, single=False):
@@ -150,35 +147,16 @@ class TransModel(Model):
             return self.norm_layer(img_feats.mean(-2))
         return img_feats
 
-    def extract_text_feature(self, texts):
-        return self.text_proj_layer(self.text_model(texts))
+    def extract_text_feature(self, texts, text_lengths):
+        return self.text_proj_layer(self.text_model(texts, text_lengths))
 
-    def compose_img_text_features(self, img_feats, text_feats, text_lengths):
-        return self.norm_layer(
-            self.comp_model(img_feats, text_feats, text_lengths).mean(-2)
-        )
+    def compose_img_text_features(self, img_feats, text_feats):
+        return self.norm_layer(self.comp_model(img_feats, text_feats))
 
     def compose_img_text(self, imgs, texts, text_lengths):
         img_feats = self.extract_img_feature(imgs)
-        text_feats = self.extract_text_feature(texts)
-        return self.compose_img_text_features(img_feats, text_feats, text_lengths)
-
-    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
-        img_feats = self.extract_img_feature(imgs_query)
-        text_feats = self.extract_text_feature(mod_texts)
-        mod_patches = self.comp_model(img_feats, text_feats, text_lengths)
-        mod_img_feats = self.norm_layer(mod_patches.mean(-2))
-        img_feats_2 = self.extract_img_feature(imgs_target)
-        tar_img_feats = self.norm_layer(img_feats_2.mean(-2))
-
-        loss = {}
-        loss.update(self.loss_func[0](mod_img_feats, tar_img_feats))
-        loss.update(
-            self.loss_func[1](
-                self.pseudoclass_layer(mod_patches.flatten(0, 1)),
-                self.pseudoclass_layer(img_feats_2.flatten(0, 1)),
-            )
-        )
+        text_feats = self.extract_text_feature(texts, text_lengths)
+        return self.compose_img_text_features(img_feats, text_feats)
 
 
 def build_model(cfg):
