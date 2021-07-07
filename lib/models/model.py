@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from .backbones import build_img_model, build_text_model
 from .composition import build_composition
-from .functions import build_loss_func, build_norm_layer
+from .functions import build_attn_pool, build_loss_func, build_norm_layer
 
 __all__ = ["build_model"]
 
@@ -20,9 +20,10 @@ class Model(nn.Module):
         self.loss_func = build_loss_func(cfg)
 
     def extract_img_feature(self, imgs, single=False):
+        img_feats = self.img_model(imgs).mean((2, 3))
         if single:
-            return self.norm_layer(self.img_model(imgs).mean((2, 3)))
-        return self.img_model(imgs).mean((2, 3))
+            return self.norm_layer(img_feats)
+        return img_feats
 
     def extract_text_feature(self, texts, text_lengths):
         return self.text_model(texts, text_lengths)
@@ -39,6 +40,18 @@ class Model(nn.Module):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, single=True)
         return self.loss_func(mod_img1, img2)
+
+
+class AttnPoolModel(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        self.attn_pool = build_attn_pool(cfg)
+
+    def extract_img_feature(self, imgs, single=False):
+        img_feats = self.attn_pool(self.img_model(imgs))
+        if single:
+            return self.norm_layer(img_feats)
+        return img_feats
 
 
 class MultiScaleModel(nn.Module):
@@ -177,6 +190,8 @@ def build_model(cfg):
         model = MultiScaleModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "trans":
         model = TransModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "attn-pool":
+        model = AttnPoolModel(cfg)
     else:
         raise NotImplementedError
     return model
