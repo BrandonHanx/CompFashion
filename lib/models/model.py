@@ -42,9 +42,9 @@ class Model(nn.Module):
         return self.loss_func(mod_img1, img2)
 
 
-class AttnPoolModel(nn.Module):
+class AttnPoolModel(Model):
     def __init__(self, cfg):
-        super().__init__()
+        super().__init__(cfg)
         self.attn_pool = build_attn_pool(cfg)
 
     def extract_img_feature(self, imgs, single=False):

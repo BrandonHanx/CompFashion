@@ -15,10 +15,8 @@ class LPI(nn.Module):
     def __init__(
         self,
         in_features,
-        hidden_features=None,
         out_features=None,
         act_layer=nn.GELU,
-        drop=0.0,
         kernel_size=3,
     ):
         super().__init__()
@@ -34,7 +32,7 @@ class LPI(nn.Module):
             groups=out_features,
         )
         self.act = act_layer()
-        self.bn = nn.SyncBatchNorm(in_features)
+        self.bn = nn.BatchNorm2d(in_features)
         self.conv2 = torch.nn.Conv2d(
             in_features,
             out_features,
@@ -110,7 +108,7 @@ class XCABlock(nn.Module):
         drop_path=0.0,
         act_layer=nn.GELU,
         norm_layer=nn.LayerNorm,
-        eta=None,
+        eta=1.0,
     ):
         super().__init__()
         self.norm1 = norm_layer(dim)
@@ -141,7 +139,7 @@ class XCABlock(nn.Module):
 
     def forward(self, x, H, W):
         x = x + self.drop_path(self.gamma1 * self.attn(self.norm1(x)))
-        xv, xt = x[:-1], x[:-1]
+        xv, xt = x[:, :-1], x[:, -1]
         xv = xv + self.drop_path(self.gamma3 * self.local_mp(self.norm3(xv), H, W))
         x = torch.cat([xv, xt.unsqueeze(1)], dim=1)
         x = x + self.drop_path(self.gamma2 * self.mlp(self.norm2(x)))
@@ -165,9 +163,10 @@ class XCiT(nn.Module):
 
         seq = torch.cat((patch_seq, word_seq), dim=1)
         seq = seq + self.pos_embedding
-        seq = self.xca_layers(seq, 7, 7)
+        for layer in self.xca_layers:
+            seq = layer(seq, 7, 7)
 
-        return seq[:-1]
+        return seq[:-1].mean(1)
 
 
 def build_xcit(cfg):

@@ -82,7 +82,7 @@ class AttentionPool2d(nn.Module):
         )  # NCHW -> (HW)NC
         x = torch.cat([x.mean(dim=0, keepdim=True), x], dim=0)  # (HW+1)NC
         x = x + self.positional_embedding[:, None, :].to(x.dtype)  # (HW+1)NC
-        x = F.multi_head_attention_forward(
+        x, _ = F.multi_head_attention_forward(
             query=x,
             key=x,
             value=x,
