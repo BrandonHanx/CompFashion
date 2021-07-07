@@ -2,6 +2,7 @@ import torch.nn as nn
 
 from .bert import build_bert
 from .bigru import build_bigru
+from .lstm import build_lstm
 from .resnet import build_resnet
 
 
@@ -16,6 +17,8 @@ def build_img_model(cfg):
 def build_text_model(cfg):
     if cfg.MODEL.TEXT_MODEL == "bigru":
         model = build_bigru(cfg)
+    elif cfg.MODEL.TEXT_MODEL == "lstm":
+        model = build_lstm(cfg)
     elif cfg.MODEL.TEXT_MODEL == "bert":
         model = build_bert(cfg)
     elif cfg.MODEL.TEXT_MODEL == "none":
