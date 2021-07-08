@@ -166,7 +166,7 @@ class XCiT(nn.Module):
         for layer in self.xca_layers:
             seq = layer(seq, 7, 7)
 
-        return seq[:-1].mean(1)
+        return seq[:-1]
 
 
 def build_xcit(cfg):

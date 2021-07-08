@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 
@@ -151,12 +153,91 @@ class TransModel(Model):
         return self.text_proj_layer(self.text_model(texts, text_lengths))
 
     def compose_img_text_features(self, img_feats, text_feats):
-        return self.norm_layer(self.comp_model(img_feats, text_feats))
+        return self.norm_layer(self.comp_model(img_feats, text_feats).mean(1))
 
     def compose_img_text(self, imgs, texts, text_lengths):
         img_feats = self.extract_img_feature(imgs)
         text_feats = self.extract_text_feature(texts, text_lengths)
         return self.compose_img_text_features(img_feats, text_feats)
+
+
+class ClusterLoss(nn.Module):
+    def __init__(self, class_num=64, temperature=1.0, device="cuda"):
+        super().__init__()
+        self.class_num = class_num
+        self.temperature = temperature
+        self.device = device
+
+        self.mask = self.mask_correlated_clusters(class_num)
+        self.criterion = nn.CrossEntropyLoss(reduction="sum")
+        self.similarity_f = nn.CosineSimilarity(dim=2)
+
+    @staticmethod
+    def mask_correlated_clusters(class_num):
+        N = 2 * class_num
+        mask = torch.ones((N, N))
+        mask = mask.fill_diagonal_(0)
+        for i in range(class_num):
+            mask[i, class_num + i] = 0
+            mask[class_num + i, i] = 0
+        mask = mask.bool()
+        return mask
+
+    def forward(self, c_i, c_j):
+        p_i = c_i.sum(0).view(-1)
+        p_i /= p_i.sum()
+        ne_i = math.log(p_i.size(0)) + (p_i * torch.log(p_i)).sum()
+        p_j = c_j.sum(0).view(-1)
+        p_j /= p_j.sum()
+        ne_j = math.log(p_j.size(0)) + (p_j * torch.log(p_j)).sum()
+        ne_loss = ne_i + ne_j
+
+        c_i = c_i.t()
+        c_j = c_j.t()
+        N = 2 * self.class_num
+        c = torch.cat((c_i, c_j), dim=0)
+        print(c.shape)
+
+        sim = self.similarity_f(c.unsqueeze(1), c.unsqueeze(0)) / self.temperature
+        sim_i_j = torch.diag(sim, self.class_num)
+        sim_j_i = torch.diag(sim, -self.class_num)
+
+        positive_clusters = torch.cat((sim_i_j, sim_j_i), dim=0).reshape(N, 1)
+        negative_clusters = sim[self.mask].reshape(N, -1)
+
+        labels = torch.zeros(N).to(positive_clusters.device).long()
+        logits = torch.cat((positive_clusters, negative_clusters), dim=1)
+        loss = self.criterion(logits, labels)
+        loss /= N
+
+        return {"cluster_loss": loss + ne_loss}
+
+
+class TransClusterModel(Model):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.cluster_proj = nn.Sequential(
+            nn.Linear(cfg.MODEL.COMP.EMBED_DIM, cfg.MODEL.COMP.EMBED_DIM),
+            nn.ReLU(),
+            nn.Linear(cfg.MODEL.COMP.EMBED_DIM, 64),
+            nn.Softmax(dim=1),
+        )
+        self.cluster_loss = ClusterLoss()
+
+    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
+        text_feat = self.extract_text_feature(mod_texts, text_lengths)
+        img_feat_q = self.extract_img_feature(imgs_query)
+        img_feat_t = self.extract_img_feature(imgs_target)
+        comp_feat = self.compose_img_text_features(img_feat_q, text_feat)
+
+        comp_feat_c = self.cluster_proj(self.norm_layer(comp_feat.flatten(0, 1)))
+        img_feat_t_c = self.cluster_proj(self.norm_layer(img_feat_t.flatten(0, 1)))
+
+        losses = {}
+        losses.update(self.loss_func(comp_feat, self.norm_layer(img_feat_t.mean(1))))
+        losses.update(self.cluster_loss(comp_feat_c, img_feat_t_c))
+
+        return losses
 
 
 def build_model(cfg):
@@ -170,6 +251,8 @@ def build_model(cfg):
         model = TransModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "attn-pool":
         model = AttnPoolModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "trans-cluster":
+        model = TransClusterModel(cfg)
     else:
         raise NotImplementedError
     return model
