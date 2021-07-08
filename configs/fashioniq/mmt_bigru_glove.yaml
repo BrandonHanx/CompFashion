@@ -1,8 +1,8 @@
 MODEL:
   IMG_MODEL: "resnet50"
-  TEXT_MODEL: "none"
+  TEXT_MODEL: "bigru"
   COMP_MODEL: "mmt"
-  LOSS: "bbc+kl_div"
+  LOSS: "bbc"
   VOCAB: "glove"
   GRU:
     EMBEDDING_SIZE: 512
@@ -26,6 +26,6 @@ SOLVER:
   CHECKPOINT_PERIOD: 40
   LRSCHEDULER: 'step'
   STEPS: (30, 50)
-  WARMUP_EPOCHS: 0
+  WARMUP_EPOCHS: 5
 TEST:
   IMS_PER_BATCH: 64

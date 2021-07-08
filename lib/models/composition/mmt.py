@@ -25,43 +25,29 @@ class MMT(nn.Module):
             norm=nn.LayerNorm(embed_dim),
         )
 
-        self.v_cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.t_cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.v_seg_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.t_seg_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
 
-        self.word_seq_length = 30
-        self.patch_seq_length = 7 * 7
-        self.pos_embedding = nn.Parameter(
-            torch.zeros(1, self.word_seq_length + self.patch_seq_length + 2, embed_dim)
-        )
+        self.pos_embedding = nn.Parameter(torch.zeros(1, 50, embed_dim))
 
-    def get_key_padding_mask(self, text_length):
-        batch_size = text_length.shape[0]
-        mask = torch.zeros(
-            batch_size, self.patch_seq_length + torch.max(text_length) + 2
-        ).to(text_length.device)
-        for i in range(batch_size):
-            mask[i, text_length[i] + self.patch_seq_length + 2 :] = 1
-        return mask.bool()
+    # def get_key_padding_mask(self, text_length):
+    #     batch_size = text_length.shape[0]
+    #     mask = torch.zeros(
+    #         batch_size, self.patch_seq_length + torch.max(text_length) + 2
+    #     ).to(text_length.device)
+    #     for i in range(batch_size):
+    #         mask[i, text_length[i] + self.patch_seq_length + 2 :] = 1
+    #     return mask.bool()
 
-    def forward(self, patch_seq, word_seq, text_length):
-        batch_size = patch_seq.shape[0]
-        v_cls_tokens = self.v_cls_token.expand(batch_size, -1, -1)
-        t_cls_tokens = self.t_cls_token.expand(batch_size, -1, -1)
-
+    def forward(self, patch_seq, word_seq):
         patch_seq = patch_seq + self.v_seg_token
+        word_seq = word_seq.unsqueeze(1) + self.t_seg_token
 
-        word_seq = word_seq + self.t_seg_token
-        key_padding_mask = self.get_key_padding_mask(text_length)
+        seq = torch.cat((patch_seq, word_seq), dim=1)
+        seq = seq + self.pos_embedding
+        seq = self.mmt(seq.transpose(0, 1))  # 50 x b x 512
 
-        seq = torch.cat((v_cls_tokens, patch_seq, t_cls_tokens, word_seq), dim=1)
-        seq = seq + self.pos_embedding[:, : seq.shape[1]]
-        seq = self.mmt(
-            seq.transpose(0, 1), src_key_padding_mask=key_padding_mask
-        )  # (49 + 30 + 2) x b x 512
-
-        return seq[1 : 1 + self.patch_seq_length].transpose(0, 1)
+        return seq[:-1].transpose(0, 1)
 
 
 def build_mmt(cfg):
