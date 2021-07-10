@@ -5,6 +5,7 @@ import torch.nn as nn
 
 from .backbones import build_img_model, build_text_model
 from .composition import build_composition
+from .correction import build_correction
 from .functions import build_attn_pool, build_loss_func, build_norm_layer
 
 __all__ = ["build_model"]
@@ -42,6 +43,35 @@ class Model(nn.Module):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, single=True)
         return self.loss_func(mod_img1, img2)
+
+
+class CorrModel(Model):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.corr_model = build_correction(
+            cfg=cfg, img_channel=self.img_model.out_channels
+        )
+
+    def diff_img_features(self, ref_img_feats, tar_img_feats):
+        return self.norm_layer(self.corr_model(ref_img_feats, tar_img_feats))
+
+    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
+        ref_img_feats = self.extract_img_feature(imgs_query)
+        tar_img_feats = self.extract_img_feature(imgs_target)
+        text_feats = self.extract_text_feature(mod_texts, text_lengths)
+
+        comp_img_feats = self.compose_img_text_features(ref_img_feats, text_feats)
+        corr_text_feats = self.diff_img_features(ref_img_feats, tar_img_feats)
+
+        losses = {}
+        losses["comp_bbc"] = self.loss_func(
+            comp_img_feats, self.norm_layer(tar_img_feats)
+        ).values()
+        losses["corr_bbc"] = self.loss_func(
+            corr_text_feats, self.norm_layer(text_feats)
+        ).values
+
+        return losses
 
 
 class AttnPoolModel(Model):
@@ -253,6 +283,8 @@ def build_model(cfg):
         model = AttnPoolModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "trans-cluster":
         model = TransClusterModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "corr":
+        model = CorrModel(cfg)
     else:
         raise NotImplementedError
     return model

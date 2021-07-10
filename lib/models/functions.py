@@ -27,7 +27,7 @@ class BatchBasedClassificationLoss(nn.Module):
 
         pred = ref_features.mm(tar_features.transpose(0, 1))
         labels = torch.arange(0, batch_size).long().to(device)
-        loss = {"batch_based_classification_loss": F.cross_entropy(pred, labels)}
+        loss = {"bbc_loss": F.cross_entropy(pred, labels)}
         return loss
 
 
