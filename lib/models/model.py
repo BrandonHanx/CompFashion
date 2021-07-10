@@ -42,7 +42,7 @@ class Model(nn.Module):
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, single=True)
-        return self.loss_func(mod_img1, img2)
+        return dict(bbc_loss=self.loss_func(mod_img1, img2))
 
 
 class CorrModel(Model):
@@ -66,10 +66,10 @@ class CorrModel(Model):
         losses = {}
         losses["comp_bbc"] = self.loss_func(
             comp_img_feats, self.norm_layer(tar_img_feats)
-        ).values()
+        )
         losses["corr_bbc"] = self.loss_func(
             corr_text_feats, self.norm_layer(text_feats)
-        ).values
+        )
 
         return losses
 
@@ -129,7 +129,11 @@ class MultiScaleModel(nn.Module):
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, single=True)
-        return self.loss_func(torch.cat(mod_img1, dim=-1), torch.cat(img2, dim=-1))
+        return dict(
+            bbc_loss=self.loss_func(
+                torch.cat(mod_img1, dim=-1), torch.cat(img2, dim=-1)
+            )
+        )
 
 
 class ProjModel(Model):
@@ -188,7 +192,7 @@ class TransModel(Model):
     def compose_img_text(self, imgs, texts, text_lengths):
         img_feats = self.extract_img_feature(imgs)
         text_feats = self.extract_text_feature(texts, text_lengths)
-        return self.compose_img_text_features(img_feats, text_feats)
+        return dict(bbc_loss=self.compose_img_text_features(img_feats, text_feats))
 
 
 class ClusterLoss(nn.Module):
@@ -226,7 +230,6 @@ class ClusterLoss(nn.Module):
         c_j = c_j.t()
         N = 2 * self.class_num
         c = torch.cat((c_i, c_j), dim=0)
-        print(c.shape)
 
         sim = self.similarity_f(c.unsqueeze(1), c.unsqueeze(0)) / self.temperature
         sim_i_j = torch.diag(sim, self.class_num)
@@ -243,7 +246,7 @@ class ClusterLoss(nn.Module):
         return {"cluster_loss": loss + ne_loss}
 
 
-class TransClusterModel(Model):
+class TransClusterModel(TransModel):
     def __init__(self, cfg):
         super().__init__(cfg)
         self.cluster_proj = nn.Sequential(
@@ -258,13 +261,15 @@ class TransClusterModel(Model):
         text_feat = self.extract_text_feature(mod_texts, text_lengths)
         img_feat_q = self.extract_img_feature(imgs_query)
         img_feat_t = self.extract_img_feature(imgs_target)
-        comp_feat = self.compose_img_text_features(img_feat_q, text_feat)
+        comp_feat = self.comp_model(img_feat_q, text_feat)
 
         comp_feat_c = self.cluster_proj(self.norm_layer(comp_feat.flatten(0, 1)))
         img_feat_t_c = self.cluster_proj(self.norm_layer(img_feat_t.flatten(0, 1)))
 
         losses = {}
-        losses.update(self.loss_func(comp_feat, self.norm_layer(img_feat_t.mean(1))))
+        losses["bbc_loss"] = self.loss_func(
+            self.norm_layer(comp_feat.mean(1)), self.norm_layer(img_feat_t.mean(1))
+        )
         losses.update(self.cluster_loss(comp_feat_c, img_feat_t_c))
 
         return losses

@@ -1,6 +1,6 @@
 MODEL:
   IMG_MODEL: "resnet50"
-  TEXT_MODEL: "bigru"
+  TEXT_MODEL: "lstm"
   COMP_MODEL: "rtic"
   LOSS: "bbc"
   VOCAB: "glove"
@@ -9,7 +9,7 @@ MODEL:
     NUM_UNITS: 1024
     VOCABULARY_SIZE: 300
   COMP:
-    EMBED_DIM: 2048
+    EMBED_DIM: 1024
 INPUT:
   HEIGHT: 224
   WIDTH: 224
