@@ -74,6 +74,41 @@ class CorrModel(Model):
         return losses
 
 
+class CorrCycleModel(Model):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.corr_model = build_correction(
+            cfg=cfg, img_channel=self.img_model.out_channels
+        )
+
+    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
+        ref_img_feats = self.extract_img_feature(imgs_query)
+        tar_img_feats = self.extract_img_feature(imgs_target)
+        text_feats = self.extract_text_feature(mod_texts, text_lengths)
+
+        comp_img_feats = self.comp_model(ref_img_feats, text_feats)
+        corr_text_feats = self.corr_model(ref_img_feats, tar_img_feats)
+
+        cycle_comp_img_feats = self.comp_model(ref_img_feats, corr_text_feats)
+        cycle_corr_text_feats = self.corr_model(ref_img_feats, comp_img_feats)
+
+        losses = {}
+        losses["comp_bbc"] = self.loss_func(
+            self.norm_layer(comp_img_feats), self.norm_layer(tar_img_feats)
+        )
+        losses["corr_bbc"] = self.loss_func(
+            self.norm_layer(corr_text_feats), self.norm_layer(text_feats)
+        )
+        losses["cycle_comp_bbc"] = self.loss_func(
+            self.norm_layer(cycle_comp_img_feats), self.norm_layer(tar_img_feats)
+        )
+        losses["cycle_corr_bbc"] = self.loss_func(
+            self.norm_layer(cycle_corr_text_feats), self.norm_layer(text_feats)
+        )
+
+        return losses
+
+
 class AttnPoolModel(Model):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -290,6 +325,8 @@ def build_model(cfg):
         model = TransClusterModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "corr":
         model = CorrModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "corr-cycle":
+        model = CorrCycleModel(cfg)
     else:
         raise NotImplementedError
     return model
