@@ -14,18 +14,22 @@ class NormalizationLayer(nn.Module):
         if learn_scale:
             self.norm_s = nn.Parameter(torch.FloatTensor((self.norm_s,)))
 
-    def forward(self, x, dim=1):
+    def forward(self, x, dim=-1):
         features = self.norm_s * x / torch.norm(x, dim=dim, keepdim=True).expand_as(x)
         return features
 
 
 class BatchBasedClassificationLoss(nn.Module):
     @staticmethod
-    def forward(ref_features, tar_features):
+    def forward(ref_features, tar_features, bmm=False):
         batch_size = ref_features.size(0)
         device = ref_features.device
 
-        pred = ref_features.mm(tar_features.transpose(0, 1))
+        if bmm:
+            pred = torch.bmm(ref_features, tar_features.unsqueeze(-1)).squeeze()
+        else:
+            pred = ref_features.mm(tar_features.transpose(0, 1))
+
         labels = torch.arange(0, batch_size).long().to(device)
         loss = F.cross_entropy(pred, labels)
         return loss

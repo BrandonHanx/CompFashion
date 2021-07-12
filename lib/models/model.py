@@ -74,6 +74,44 @@ class CorrModel(Model):
         return losses
 
 
+class CorrBmmModel(Model):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.corr_model = build_correction(
+            cfg=cfg, img_channel=self.img_model.out_channels
+        )
+
+    def diff_img_features(self, ref_img_feats, tar_img_feats):
+        N = tar_img_feats.shape[0]
+        corr_text_feats = []
+        for ref_img_feat in ref_img_feats:
+            corr_text_feats.append(
+                self.corr_model(ref_img_feat.unsqueeze(0).expand(N, -1), tar_img_feats)
+            )  # N x D
+        corr_text_feats = torch.stack(corr_text_feats, dim=0)  # B x N x D
+        return self.norm_layer(corr_text_feats)
+
+    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
+        ref_img_feats = self.extract_img_feature(imgs_query)
+        tar_img_feats = self.extract_img_feature(imgs_target)
+        text_feats = self.extract_text_feature(mod_texts, text_lengths)  # B x D
+
+        comp_img_feats = self.compose_img_text_features(ref_img_feats, text_feats)
+        corr_text_feats = self.diff_img_features(
+            ref_img_feats, tar_img_feats
+        )  # B x N x D
+
+        losses = {}
+        losses["comp_bbc"] = self.loss_func(
+            comp_img_feats, self.norm_layer(tar_img_feats)
+        )
+        losses["corr_bbc"] = self.loss_func(
+            corr_text_feats, self.norm_layer(text_feats), bmm=True
+        )
+
+        return losses
+
+
 class CorrCycleModel(Model):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -324,6 +362,8 @@ def build_model(cfg):
         model = CorrModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "corr-cycle":
         model = CorrCycleModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "corr-bmm":
+        model = CorrBmmModel(cfg)
     else:
         raise NotImplementedError
     return model
