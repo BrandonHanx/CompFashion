@@ -89,8 +89,8 @@ class CorrCycleModel(Model):
         comp_img_feats = self.comp_model(ref_img_feats, text_feats)
         corr_text_feats = self.corr_model(ref_img_feats, tar_img_feats)
 
-        cycle_comp_img_feats = self.comp_model(ref_img_feats, corr_text_feats)
-        cycle_corr_text_feats = self.corr_model(ref_img_feats, comp_img_feats)
+        fake_text_feats = self.corr_model(tar_img_feats, ref_img_feats)
+        cycle_img_feats = self.comp_model(tar_img_feats, fake_text_feats.detach())
 
         losses = {}
         losses["comp_bbc"] = self.loss_func(
@@ -100,10 +100,7 @@ class CorrCycleModel(Model):
             self.norm_layer(corr_text_feats), self.norm_layer(text_feats)
         )
         losses["cycle_comp_bbc"] = self.loss_func(
-            self.norm_layer(cycle_comp_img_feats), self.norm_layer(tar_img_feats)
-        )
-        losses["cycle_corr_bbc"] = self.loss_func(
-            self.norm_layer(cycle_corr_text_feats), self.norm_layer(text_feats)
+            self.norm_layer(cycle_img_feats), self.norm_layer(ref_img_feats)
         )
 
         return losses

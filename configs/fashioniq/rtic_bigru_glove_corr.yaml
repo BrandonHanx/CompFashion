@@ -1,7 +1,7 @@
 MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
-  COMP_MODEL: "tirg"
+  COMP_MODEL: "rtic"
   CORR_MODEL: "fd"
   LOSS: "bbc"
   VOCAB: "glove"

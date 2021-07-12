@@ -111,4 +111,4 @@ def evaluation(
             q_feats=q_feats.cpu().numpy(),
         )
 
-    return cmc[2]
+    return cmc[2:]

@@ -66,7 +66,7 @@ class LRSchedulerWithWarmup(_LRScheduler):
         )
 
         if self.mode == "exp":
-            factor = epoch_ratio
+            factor = self.last_epoch
             return [base_lr * self.power ** factor for base_lr in self.base_lrs]
         if self.mode == "linear":
             factor = 1 - epoch_ratio

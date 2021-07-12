@@ -2,7 +2,6 @@ MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
   COMP_MODEL: "tirg"
-  CORR_MODEL: "fd"
   LOSS: "bbc"
   VOCAB: "glove"
   GRU:
@@ -11,7 +10,6 @@ MODEL:
     VOCABULARY_SIZE: 300
   COMP:
     EMBED_DIM: 2048
-    METHOD: "corr"
 INPUT:
   HEIGHT: 224
   WIDTH: 224

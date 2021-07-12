@@ -1,8 +1,7 @@
 MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
-  COMP_MODEL: "tirg"
-  CORR_MODEL: "fd"
+  COMP_MODEL: "rtic"
   LOSS: "bbc"
   VOCAB: "glove"
   GRU:
@@ -11,7 +10,6 @@ MODEL:
     VOCABULARY_SIZE: 300
   COMP:
     EMBED_DIM: 2048
-    METHOD: "corr"
 INPUT:
   HEIGHT: 224
   WIDTH: 224
@@ -20,13 +18,13 @@ DATASETS:
   TEST: ("fashioniq_dress_val", "fashioniq_shirt_val", "fashioniq_toptee_val")
 SOLVER:
   IMS_PER_BATCH: 32
-  NUM_EPOCHS: 80
-  BASE_LR: 0.0002
+  NUM_EPOCHS: 100
+  BASE_LR: 0.0001
   WEIGHT_DECAY: 0.00004
   WEIGHT_DECAY_BIAS: 0.00004
   CHECKPOINT_PERIOD: 40
-  LRSCHEDULER: 'step'
-  STEPS: (30, 50)
-  WARMUP_EPOCHS: 5
+  LRSCHEDULER: 'exp'
+  POWER: 0.95
+  WARMUP_EPOCHS: 0
 TEST:
   IMS_PER_BATCH: 64
