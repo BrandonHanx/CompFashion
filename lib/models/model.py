@@ -45,6 +45,23 @@ class Model(nn.Module):
         return dict(bbc_loss=self.loss_func(mod_img1, img2))
 
 
+class BmmModel(Model):
+    def compose_img_text_features(self, img_feats, text_feats):
+        N = text_feats.shape[0]
+        comp_img_feats = []
+        for img_feat in img_feats:
+            comp_img_feats.append(
+                self.comp_model(img_feat.unsqueeze(0).expand(N, -1)), text_feats
+            )
+        comp_img_feats = torch.stack(comp_img_feats, dim=0)
+        return self.norm_layer(comp_img_feats)
+
+    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
+        mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
+        img2 = self.extract_img_feature(imgs_target, single=True)
+        return dict(bbc_loss=self.loss_func(mod_img1, img2, bmm=True))
+
+
 class CorrModel(Model):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -364,6 +381,8 @@ def build_model(cfg):
         model = CorrCycleModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "corr-bmm":
         model = CorrBmmModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "bmm":
+        model = BmmModel(cfg)
     else:
         raise NotImplementedError
     return model
