@@ -2,6 +2,7 @@ from .cosmo import build_cosmo
 from .mmt import build_mmt
 from .rtic import build_rtic
 from .tirg import build_tirg
+from .trans import build_trans
 from .val import build_val
 from .xcit import build_xcit
 
@@ -20,6 +21,8 @@ def build_composition(**kwargs):
         model = build_mmt(cfg)
     elif cfg.MODEL.COMP_MODEL == "xcit":
         model = build_xcit(cfg)
+    elif cfg.MODEL.COMP_MODEL == "trans":
+        model = build_trans(cfg)
     else:
         raise NotImplementedError
     return model
