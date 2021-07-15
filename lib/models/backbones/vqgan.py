@@ -238,7 +238,9 @@ class Encoder(nn.Module):
         )
 
     def forward(self, x):
-        # assert x.shape[2] == x.shape[3] == self.resolution, "{}, {}, {}".format(x.shape[2], x.shape[3], self.resolution)
+        assert x.shape[2] == x.shape[3] == self.resolution, "{}, {}, {}".format(
+            x.shape[2], x.shape[3], self.resolution
+        )
 
         # timestep embedding
         temb = None
@@ -425,17 +427,14 @@ class VectorQuantizer(nn.Module):
         z_q = self.embedding(min_encoding_indices)
 
         # reshape back to match original input shape
-        z_q = z_q.permute(0, 3, 1, 2).contiguous()
+        z_q = z_q.view(z.shape).permute(0, 3, 1, 2).contiguous()
 
-        return z_q, min_encoding_indices
+        return z_q, min_encoding_indices.view(z.shape[:-1])
 
-    def get_codebook_entry(self, indices, shape=None):
-        z_q = self.embedding(indices)
-
-        if shape is not None:
-            z_q = z_q.view(shape)
-
-        return z_q
+    def get_codebook_entry(self, indices):
+        B, h, w = indices.shape
+        z_q = self.embedding(indices.view(-1))
+        return z_q.view(B, h, w, z_q.shape[-1]).permute(0, 3, 1, 2)
 
 
 class VQModel(nn.Module):
@@ -452,8 +451,7 @@ class VQModel(nn.Module):
         self.quantize = VectorQuantizer(n_embed, embed_dim)
         self.quant_conv = torch.nn.Conv2d(256, embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(embed_dim, 256, 1)
-        if ckpt_path is not None:
-            self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
+        self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
 
     def init_from_ckpt(self, path, ignore_keys):
         sd = torch.load(path, map_location="cpu")
