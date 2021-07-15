@@ -126,10 +126,10 @@ def do_train(
         scheduler.step()
 
         if epoch % evaluate_period == 0:
-            topk = 0.0
+            topk = []
             for loader in data_loader_val:
-                topk += inference(model, loader, save_data=False)
-            topk /= 3.0
+                topk.extend(inference(model, loader, save_data=False))
+            topk = sum(topk) / len(topk)
             meters.update(topk=topk)
             if topk > best_topk:
                 best_topk = topk

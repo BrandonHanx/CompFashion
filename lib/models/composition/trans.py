@@ -28,7 +28,7 @@ class Transformer(nn.Module):
         self.pos_embedding = nn.Parameter(torch.zeros(1, 50, embed_dim))
 
     def forward(self, patch_seq, word_feat=None):
-        cls_token = patch_seq.mean(dim=0, keepdim=True)
+        cls_token = patch_seq.mean(dim=1, keepdim=True)
         if word_feat is not None:
             patch_seq = patch_seq + word_feat.unsqueeze(1)
         seq = torch.cat((cls_token, patch_seq), dim=1)

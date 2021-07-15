@@ -257,13 +257,11 @@ class TransModel(Model):
         embed_dim = cfg.MODEL.COMP.EMBED_DIM
         self.img_proj_layer = nn.Sequential(
             nn.Linear(self.img_model.out_channels, embed_dim),
-            nn.BatchNorm1d(embed_dim),
             nn.LeakyReLU(negative_slope=0.2),
         )
 
         self.text_proj_layer = nn.Sequential(
             nn.Linear(self.text_model.out_channels, embed_dim),
-            nn.BatchNorm1d(embed_dim),
             nn.LeakyReLU(negative_slope=0.2),
         )
 
@@ -279,14 +277,6 @@ class TransModel(Model):
 
     def extract_text_feature(self, texts, text_lengths):
         return self.text_proj_layer(self.text_model(texts, text_lengths))
-
-    def compose_img_text_features(self, img_feats, text_feats):
-        return self.norm_layer(self.comp_model(img_feats, text_feats))
-
-    def compose_img_text(self, imgs, texts, text_lengths):
-        img_feats = self.extract_img_feature(imgs)
-        text_feats = self.extract_text_feature(texts, text_lengths)
-        return dict(bbc_loss=self.compose_img_text_features(img_feats, text_feats))
 
 
 class ClusterLoss(nn.Module):
