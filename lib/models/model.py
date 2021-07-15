@@ -2,6 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .backbones import build_img_model, build_text_model
 from .composition import build_composition
@@ -279,6 +280,46 @@ class TransModel(Model):
         return self.text_proj_layer(self.text_model(texts, text_lengths))
 
 
+class TransDecModel(nn.Module):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        embed_dim = cfg.MODEL.COMP.EMBED_DIM
+
+        self.img_model = build_img_model(cfg).eval()
+        self.img_model.train = self._disabled_train
+
+        self.comp_model = build_composition(cfg)
+        self.text_model = build_text_model(cfg)
+        self.text_proj_layer = nn.Sequential(
+            nn.Linear(self.text_model.out_channels, embed_dim),
+            nn.LeakyReLU(negative_slope=0.2),
+        )
+
+    def _disabled_train(self, mode=True):
+        return self
+
+    def extract_img_feature(self, imgs):
+        imgs = imgs * 2 - 1
+        _, indices = self.img_model.encode(imgs)
+        return indices.flatten(1, -1)
+
+    def extract_text_feature(self, texts, text_lengths):
+        return self.text_proj_layer(self.text_model(texts, text_lengths))
+
+    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
+        ref_indices = self.extract_img_feature(imgs_query).long()
+        tgt_indices = self.extract_img_feature(imgs_target).long()
+        text_feat = self.extract_text_feature(mod_texts, text_lengths)
+
+        pred_logits = self.comp_model(ref_indices, text_feat, tgt_indices)
+        loss = dict(
+            ce=F.cross_entropy(
+                pred_logits.view(-1, pred_logits.size(-1)), tgt_indices.view(-1)
+            )
+        )
+        return loss
+
+
 class ClusterLoss(nn.Module):
     def __init__(self, class_num=64, temperature=1.0, device="cuda"):
         super().__init__()
@@ -368,6 +409,8 @@ def build_model(cfg):
         model = MultiScaleModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "trans":
         model = TransModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "transdec":
+        model = TransDecModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "attn-pool":
         model = AttnPoolModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "trans-cluster":

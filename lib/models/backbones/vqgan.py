@@ -479,3 +479,7 @@ class VQModel(nn.Module):
         quant = self.quantize.get_codebook_entry(code)
         dec = self.decode(quant)
         return dec
+
+
+def build_vqgan():
+    return VQModel()
