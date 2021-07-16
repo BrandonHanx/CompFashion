@@ -4,6 +4,7 @@ from .rtic import build_rtic
 from .tirg import build_tirg
 from .trans import build_trans
 from .transdec import build_transdec
+from .transenc import build_transenc
 from .val import build_val
 from .xcit import build_xcit
 
@@ -26,6 +27,8 @@ def build_composition(**kwargs):
         model = build_trans(cfg)
     elif cfg.MODEL.COMP_MODEL == "transdec":
         model = build_transdec(cfg)
+    elif cfg.MODEL.COMP_MODEL == "transenc":
+        model = build_transenc(cfg)
     else:
         raise NotImplementedError
     return model

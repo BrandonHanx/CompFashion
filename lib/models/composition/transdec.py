@@ -47,7 +47,7 @@ class TransDec(nn.Module):
         patch_seq = patch_seq + self.v_seg_token
         word_seq = word_seq.unsqueeze(1) + self.t_seg_token
 
-        seq = torch.cat((patch_seq, word_seq), dim=1)
+        seq = torch.cat((word_seq, patch_seq), dim=1)
         seq = seq + self.pos_embedding
         start_tokens = self.start_token.expand(patch_indices.shape[0], -1, -1)
 

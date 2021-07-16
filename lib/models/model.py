@@ -212,7 +212,8 @@ class TransDecModel(nn.Module):
 
         pred_logits = self.comp_model(ref_indices, text_feat, tgt_indices)
         loss = dict(
-            ce=F.cross_entropy(
+            ce=256
+            * F.cross_entropy(
                 pred_logits.view(-1, pred_logits.size(-1)), tgt_indices.view(-1)
             )
         )
