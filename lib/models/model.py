@@ -282,13 +282,13 @@ class TransModel(Model):
 
 class TransDecModel(nn.Module):
     def __init__(self, cfg):
-        super().__init__(cfg)
+        super().__init__()
         embed_dim = cfg.MODEL.COMP.EMBED_DIM
 
         self.img_model = build_img_model(cfg).eval()
         self.img_model.train = self._disabled_train
 
-        self.comp_model = build_composition(cfg)
+        self.comp_model = build_composition(cfg=cfg)
         self.text_model = build_text_model(cfg)
         self.text_proj_layer = nn.Sequential(
             nn.Linear(self.text_model.out_channels, embed_dim),

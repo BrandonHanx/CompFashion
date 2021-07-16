@@ -16,13 +16,15 @@ class TransDec(nn.Module):
         self.t_seg_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
 
         self.pos_embedding = nn.Parameter(torch.zeros(1, 257, embed_dim))
-        self.tgt_mask = torch.tril(torch.ones(256, 256))
+        self.tgt_mask = torch.tril(torch.ones(256, 256)).cuda()
 
         self.ln_f = nn.LayerNorm(embed_dim)
         self.head = nn.Linear(embed_dim, 1024, bias=False)
 
-    def forward(self, patch_indices, word_seq, tgt_seq):
+    def forward(self, patch_indices, word_seq, tgt_indices):
         patch_seq = self.v_embeddings(patch_indices)
+        tgt_seq = self.v_embeddings(tgt_indices)
+
         patch_seq = patch_seq + self.v_seg_token
         word_seq = word_seq.unsqueeze(1) + self.t_seg_token
 

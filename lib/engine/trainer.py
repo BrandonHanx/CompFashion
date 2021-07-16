@@ -109,7 +109,7 @@ def do_train(
                             "eta: {eta}",
                             "epoch [{epoch}][{inner_iter}/{num_iter}]",
                             "{meters}",
-                            "lr: {lr:.6f}",
+                            "lr: {lr:.2e}",
                         ]
                     ).format(
                         eta=eta_string,
