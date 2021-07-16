@@ -85,10 +85,11 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
     else:
         meters = MetricLogger(delimiter="  ")
 
-    log_period = cfg.SOLVER.LOG_PERIOD
-    checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
-    evaluate_period = cfg.SOLVER.EVALUATE_PERIOD
+    arguments["log_period"] = cfg.SOLVER.LOG_PERIOD
+    arguments["checkpoint_period"] = cfg.SOLVER.CHECKPOINT_PERIOD
+    arguments["evaluate_period"] = cfg.SOLVER.EVALUATE_PERIOD
     arguments["max_epoch"] = cfg.SOLVER.NUM_EPOCHS
+    arguments["gen_evaluate_mode"] = cfg.SOLVER.GEN_EVALUATE_MODE
     arguments["distributed"] = distributed
 
     do_train(
@@ -100,9 +101,6 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
         checkpointer,
         meters,
         device,
-        log_period,
-        checkpoint_period,
-        evaluate_period,
         arguments,
     )
 

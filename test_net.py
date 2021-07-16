@@ -106,6 +106,7 @@ def main():
             output_folder=output_folder,
             save_data=args.save_data,
             rerank=args.rerank,
+            gen_mode=cfg.TEST.GEN_TEST_MODE,
         )
         synchronize()
 

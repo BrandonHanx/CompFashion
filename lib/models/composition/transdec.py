@@ -36,6 +36,28 @@ class TransDec(nn.Module):
 
         return logits
 
+    @torch.no_grad()
+    def sample(self, patch_indices, word_seq):
+        patch_seq = self.v_embeddings(patch_indices)
+
+        patch_seq = patch_seq + self.v_seg_token
+        word_seq = word_seq.unsqueeze(1) + self.t_seg_token
+
+        seq = torch.cat((patch_seq, word_seq), dim=1)
+        seq = seq + self.pos_embedding
+
+        memory = self.transformer.encoder(seq)
+        tgt_indices = patch_indices[:, 0].unsqueeze(1)
+
+        for i in range(1, 256):
+            tgt_seq = self.v_embeddings(tgt_indices)
+            pred_token = self.transformer(tgt_seq, memory)
+            pred_logits = self.head(self.ln_f(pred_token)).squeeze()
+            pred_indice = torch.argmax(pred_logits, dim=-1, keepdim=True)
+            tgt_indices = torch.cat((tgt_indices, pred_indice), dim=-1)
+
+        return tgt_indices
+
 
 def build_transdec(cfg):
     return TransDec(cfg.MODEL.COMP.EMBED_DIM)

@@ -88,6 +88,7 @@ _C.SOLVER.NUM_EPOCHS = 100
 _C.SOLVER.LOG_PERIOD = 10
 _C.SOLVER.CHECKPOINT_PERIOD = 1
 _C.SOLVER.EVALUATE_PERIOD = 1
+_C.SOLVER.GEN_EVALUATE_MODE = False
 
 _C.SOLVER.OPTIMIZER = "Adam"
 _C.SOLVER.BASE_LR = 0.0002
@@ -121,6 +122,7 @@ _C.TEST = CN()
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will
 # see 2 images per batch
 _C.TEST.IMS_PER_BATCH = 16
+_C.TEST.GEN_TEST_MODE = False
 
 
 # ---------------------------------------------------------------------------- #

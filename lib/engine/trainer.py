@@ -4,6 +4,7 @@ import time
 
 import torch
 import torch.distributed as dist
+from tqdm import tqdm
 
 from lib.utils.comm import get_world_size
 
@@ -44,9 +45,6 @@ def do_train(
     checkpointer,
     meters,
     device,
-    log_period,
-    checkpoint_period,
-    evaluate_period,
     arguments,
 ):
     logger = logging.getLogger("CompFashion.trainer")
@@ -57,8 +55,13 @@ def do_train(
     max_iter = max_epoch * len(data_loader)
     iteration = arguments["iteration"]
     distributed = arguments["distributed"]
+    log_period = arguments["log_period"]
+    evaluate_period = arguments["evaluate_period"]
+    checkpoint_period = arguments["checkpoint_period"]
+    gen_evaluate_mode = arguments["gen_evaluate_mode"]
 
     best_topk = 0.0
+    min_loss = 1000
     start_training_time = time.time()
     end = time.time()
 
@@ -121,19 +124,42 @@ def do_train(
                     )
                 )
 
-        #             break
-
         scheduler.step()
 
         if epoch % evaluate_period == 0:
-            topk = []
-            for loader in data_loader_val:
-                topk.extend(inference(model, loader, save_data=False))
-            topk = sum(topk) / len(topk)
-            meters.update(topk=topk)
-            if topk > best_topk:
-                best_topk = topk
-                checkpointer.save("best", **arguments)
+            if gen_evaluate_mode:
+                eval_loss = 0
+                model.eval()
+                with torch.no_grad():
+                    for step, batch_data in tqdm(enumerate(data_loader)):
+                        imgs_query = batch_data["source_images"].to(device)
+                        mod_texts = batch_data["text"].to(device)
+                        text_lengths = batch_data["text_lengths"].to(device)
+                        imgs_target = batch_data["target_images"].to(device)
+
+                        loss_dict = model.compute_loss(
+                            imgs_query, mod_texts, text_lengths, imgs_target
+                        )
+                        losses = sum(loss for loss in loss_dict.values())
+                        loss_dict_reduced = reduce_loss_dict(loss_dict)
+                        losses_reduced = sum(
+                            loss for loss in loss_dict_reduced.values()
+                        )
+                        eval_loss += losses_reduced
+                eval_loss /= step
+                logger.info("evaluate_loss: {:.3e}".format(eval_loss))
+                if eval_loss < min_loss:
+                    min_loss = eval_loss
+                    checkpointer.save("best", **arguments)
+            else:
+                topk = []
+                for loader in data_loader_val:
+                    topk.extend(inference(model, loader, save_data=False))
+                topk = sum(topk) / len(topk)
+                meters.update(topk=topk)
+                if topk > best_topk:
+                    best_topk = topk
+                    checkpointer.save("best", **arguments)
 
         if epoch % checkpoint_period == 0:
             checkpointer.save("epoch_{:d}".format(epoch), **arguments)

@@ -4,6 +4,7 @@ import os
 import time
 
 import torch
+from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
 
 from lib.data.metrics import evaluation
@@ -45,6 +46,27 @@ def compute_on_dataset(model, data_loader, device):
     return results_dict
 
 
+def generation_on_dataset(model, data_loader, device):
+    model.eval()
+    tgt_imgs, pred_imgs = [], []
+
+    for batch_data in tqdm(data_loader):
+        imgs = batch_data["source_images"].to(device)
+        texts = batch_data["text"].to(device)
+        text_lengths = batch_data["text_lengths"].to(device)
+        imgs_target = batch_data["target_images"].to(device)
+
+        with torch.no_grad():
+            pred_img, tgt_img = model.reconstruct(
+                imgs, texts, text_lengths, imgs_target
+            )
+        tgt_imgs.append(tgt_img)
+        pred_imgs.append(pred_img)
+        break
+
+    return torch.stack(pred_imgs, dim=0), torch.stack(tgt_imgs, dim=0)
+
+
 def _accumulate_predictions_from_multiple_gpus(predictions_per_gpu):
     all_predictions = all_gather(predictions_per_gpu)
     if not is_main_process():
@@ -63,12 +85,20 @@ def inference(
     output_folder="",
     save_data=False,
     rerank=False,
+    gen_mode=False,
 ):
     logger = logging.getLogger("CompFashion.inference")
     dataset = data_loader.dataset
     logger.info(
         "Start evaluation on {} dataset({} images).".format(dataset.name, len(dataset))
     )
+
+    if gen_mode:
+        pred_imgs, tgt_imgs = generation_on_dataset(model, data_loader, device)
+        for i, pred_img, tgt_img in enumerate(zip(pred_imgs, tgt_imgs)):
+            to_pil_image(pred_img).save(output_folder + "rec_{}.png".format(i))
+            to_pil_image(tgt_img).save(output_folder + "tgt_{}.png".format(i))
+        return
 
     predictions = None
     if not os.path.exists(os.path.join(output_folder, "inference_data.npz")):
