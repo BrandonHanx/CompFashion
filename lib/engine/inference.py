@@ -60,11 +60,12 @@ def generation_on_dataset(model, data_loader, device):
             pred_img, tgt_img = model.reconstruct(
                 imgs, texts, text_lengths, imgs_target
             )
+
         tgt_imgs.append(tgt_img)
         pred_imgs.append(pred_img)
         break
 
-    return torch.stack(pred_imgs, dim=0), torch.stack(tgt_imgs, dim=0)
+    return torch.cat(pred_imgs, dim=0), torch.cat(tgt_imgs, dim=0)
 
 
 def _accumulate_predictions_from_multiple_gpus(predictions_per_gpu):
@@ -95,9 +96,11 @@ def inference(
 
     if gen_mode:
         pred_imgs, tgt_imgs = generation_on_dataset(model, data_loader, device)
-        for i, pred_img, tgt_img in enumerate(zip(pred_imgs, tgt_imgs)):
-            to_pil_image(pred_img).save(output_folder + "rec_{}.png".format(i))
-            to_pil_image(tgt_img).save(output_folder + "tgt_{}.png".format(i))
+        i = 0
+        for pred_img, tgt_img in zip(pred_imgs, tgt_imgs):
+            to_pil_image(pred_img).save(output_folder + "/{}_rec.png".format(i))
+            to_pil_image(tgt_img).save(output_folder + "/{}_tgt.png".format(i))
+            i += 1
         return
 
     predictions = None

@@ -123,6 +123,7 @@ def do_train(
                         lr=optimizer.param_groups[-1]["lr"],
                     )
                 )
+        #             break
 
         scheduler.step()
 
@@ -131,7 +132,7 @@ def do_train(
                 eval_loss = 0
                 model.eval()
                 with torch.no_grad():
-                    for step, batch_data in tqdm(enumerate(data_loader)):
+                    for step, batch_data in tqdm(enumerate(data_loader_val[0])):
                         imgs_query = batch_data["source_images"].to(device)
                         mod_texts = batch_data["text"].to(device)
                         text_lengths = batch_data["text_lengths"].to(device)

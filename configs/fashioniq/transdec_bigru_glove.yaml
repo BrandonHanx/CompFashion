@@ -15,7 +15,7 @@ INPUT:
   WIDTH: 256
 DATASETS:
   TRAIN: ("fashioniq_dress_train", "fashioniq_shirt_train", "fashioniq_toptee_train")
-  TEST: ("fashioniq_dress_val", "fashioniq_shirt_val", "fashioniq_toptee_val")
+  TEST: ("fashioniq_dress_val",)
 SOLVER:
   IMS_PER_BATCH: 32
   NUM_EPOCHS: 80
@@ -26,5 +26,7 @@ SOLVER:
   LRSCHEDULER: 'step'
   STEPS: (20, 40, 60)
   WARMUP_EPOCHS: 0
+  GEN_EVALUATE_MODE: True
 TEST:
   IMS_PER_BATCH: 64
+  GEN_TEST_MODE: True

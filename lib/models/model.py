@@ -227,6 +227,7 @@ class TransDecModel(nn.Module):
         pred_indices = self.comp_model.sample(ref_indices.flatten(1, -1), text_feat)
         tgt_img = self.img_model.decode_code(tgt_indices.view(-1, 16, 16))
         pred_img = self.img_model.decode_code(pred_indices.view(-1, 16, 16))
+        print(tgt_indices[0], pred_indices[0])
         return self.to_rgb(pred_img), self.to_rgb(tgt_img)
 
     @staticmethod
