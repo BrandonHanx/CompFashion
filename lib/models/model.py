@@ -212,8 +212,7 @@ class TransDecModel(nn.Module):
 
         pred_logits = self.comp_model(ref_indices, text_feat, tgt_indices)
         loss = dict(
-            ce=256
-            * F.cross_entropy(
+            ce=F.cross_entropy(
                 pred_logits.view(-1, pred_logits.size(-1)), tgt_indices.view(-1)
             )
         )
@@ -225,10 +224,11 @@ class TransDecModel(nn.Module):
         tgt_indices = self.extract_img_feature(imgs_target).long()
         text_feat = self.extract_text_feature(mod_texts, text_lengths)
 
-        pred_indices = self.comp_model.sample(ref_indices.flatten(1, -1), text_feat)
+        pred_indices = self.comp_model.sample(
+            ref_indices.flatten(1, -1), text_feat, tgt_indices.flatten(1, -1)
+        )
         tgt_img = self.img_model.decode_code(tgt_indices.view(-1, 16, 16))
         pred_img = self.img_model.decode_code(pred_indices.view(-1, 16, 16))
-        print(tgt_indices[0], pred_indices[0])
         return self.to_rgb(pred_img), self.to_rgb(tgt_img)
 
     @staticmethod
