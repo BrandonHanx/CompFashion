@@ -9,36 +9,30 @@ from .datasets import DatasetCatalog
 
 
 def build_transform(name, is_train):
-    # normalizer = T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    # if "fashioniq" in name:
-    #     if is_train:
-    #         transform = T.Compose(
-    #             [
-    #                 T.RandomResizedCrop(224, scale=(0.8, 1.0), ratio=(0.75, 1.3)),
-    #                 T.RandomHorizontalFlip(),
-    #                 T.ToTensor(),
-    #                 # T.Lambda(
-    #                 #     lambda xx: xx + 0.01 * torch.randn(xx.shape)
-    #                 # ),
-    #                 normalizer,
-    #             ]
-    #         )
-    #     else:
-    #         transform = T.Compose(
-    #             [
-    #                 T.Resize((224, 224)),
-    #                 T.ToTensor(),
-    #                 normalizer,
-    #             ]
-    #         )
-    # else:
-    #     NotImplementedError
-    transform = T.Compose(
-        [
-            T.Resize((256, 256)),
-            T.ToTensor(),
-        ]
-    )
+    normalizer = T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    if "fashioniq" in name:
+        if is_train:
+            transform = T.Compose(
+                [
+                    T.RandomResizedCrop(224, scale=(0.8, 1.0), ratio=(0.75, 1.3)),
+                    T.RandomHorizontalFlip(),
+                    T.ToTensor(),
+                    # T.Lambda(
+                    #     lambda xx: xx + 0.01 * torch.randn(xx.shape)
+                    # ),
+                    normalizer,
+                ]
+            )
+        else:
+            transform = T.Compose(
+                [
+                    T.Resize((224, 224)),
+                    T.ToTensor(),
+                    normalizer,
+                ]
+            )
+    else:
+        NotImplementedError
     return transform
 
 

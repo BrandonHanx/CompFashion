@@ -34,6 +34,26 @@ class DatasetCatalog:
             "split": "val",
             "cat_type": "toptee",
         },
+        "fashionpedia_comp_train": {
+            "path": "fashionpedia",
+            "split": "train",
+            "cat_type": "comp",
+        },
+        "fashionpedia_comp_val": {
+            "path": "fashionpedia",
+            "split": "val",
+            "cat_type": "comp",
+        },
+        "fashionpedia_outfit_train": {
+            "path": "fashionpedia",
+            "split": "train",
+            "cat_type": "outfit",
+        },
+        "fashionpedia_outfit_val": {
+            "path": "fashionpedia",
+            "split": "val",
+            "cat_type": "outfit",
+        },
     }
 
     @staticmethod
@@ -48,6 +68,18 @@ class DatasetCatalog:
             )
             return dict(
                 factory="FashionIQ",
+                args=args,
+            )
+        elif "fashionpedia" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                path=os.path.join(data_dir, attrs["path"]),
+                split=attrs["split"],
+                cat_type=attrs["cat_type"],
+            )
+            return dict(
+                factory="FashionPedia",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))
