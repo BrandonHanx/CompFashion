@@ -10,7 +10,7 @@ from .datasets import DatasetCatalog
 
 def build_transform(name, is_train):
     normalizer = T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    if "fashioniq" in name:
+    if "fashioniq" or "fashionpedia" in name:
         if is_train:
             transform = T.Compose(
                 [

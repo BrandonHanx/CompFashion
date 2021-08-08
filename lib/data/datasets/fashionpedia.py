@@ -55,7 +55,7 @@ class FashionPedia(torch.utils.data.Dataset):
         return len(self.data)
 
     def get_img(self, img_name):
-        img_path = f"{self.path}/crop_images/{img_name}.jpg"
+        img_path = f"{self.path}/crop_images/{img_name}"
 
         with open(img_path, "rb") as f:
             img = PIL.Image.open(f)
