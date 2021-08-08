@@ -69,6 +69,12 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
     save_to_disk = get_rank() == 0
     checkpointer = Checkpointer(model, optimizer, scheduler, output_dir, save_to_disk)
 
+    if cfg.MODEL.WEIGHT != "imagenet":
+        if os.path.isfile(cfg.MODEL.WEIGHT):
+            checkpointer.load(cfg.MODEL.WEIGHT)
+        else:
+            raise IOError("{} is not a checkpoint file".format(cfg.MODEL.WEIGHT))
+
     if resume_from:
         if os.path.isfile(resume_from):
             extra_checkpoint_data = checkpointer.resume(resume_from)
