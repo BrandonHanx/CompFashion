@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import PIL
 import torch
@@ -55,7 +57,9 @@ class FashionIQ(torch.utils.data.Dataset):
         return len(self.data)
 
     def get_img(self, img_name):
-        img_path = f"{self.path}/images/{img_name}.jpg"
+        img_path = f"{self.path}/crop_images/{img_name}.jpg"
+        if not os.path.exists(img_path):
+            img_path = f"{self.path}/images/{img_name}.jpg"
 
         with open(img_path, "rb") as f:
             img = PIL.Image.open(f)
