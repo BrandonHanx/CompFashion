@@ -70,7 +70,7 @@ class DatasetCatalog:
                 factory="FashionIQ",
                 args=args,
             )
-        elif "fashionpedia" in name:
+        if "fashionpedia" in name:
             data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(

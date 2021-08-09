@@ -12,7 +12,13 @@ class FashionIQ(torch.utils.data.Dataset):
     """FashionIQ dataset."""
 
     def __init__(
-        self, path, split="train", cat_type="dress", transform=None, vocab="glove"
+        self,
+        path,
+        split="train",
+        cat_type="dress",
+        transform=None,
+        vocab="glove",
+        crop=False,
     ):
         super().__init__()
         self.path = path
@@ -20,6 +26,7 @@ class FashionIQ(torch.utils.data.Dataset):
         self.split = split
         self.data = []
         self.name = f"FashionIQ.{cat_type}.dict.{split}"
+        self.use_crop = crop
 
         caps_file = f"{path}/captions/cap.{cat_type}.dict.{split}.json"
         self.data = read_json(caps_file)
@@ -57,8 +64,11 @@ class FashionIQ(torch.utils.data.Dataset):
         return len(self.data)
 
     def get_img(self, img_name):
-        img_path = f"{self.path}/crop_images/{img_name}.jpg"
-        if not os.path.exists(img_path):
+        if self.use_crop:
+            img_path = f"{self.path}/crop_images/{img_name}.jpg"
+            if not os.path.exists(img_path):
+                img_path = f"{self.path}/images/{img_name}.jpg"
+        else:
             img_path = f"{self.path}/images/{img_name}.jpg"
 
         with open(img_path, "rb") as f:

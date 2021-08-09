@@ -16,6 +16,7 @@ INPUT:
 DATASETS:
   TRAIN: ("fashioniq_dress_train", "fashioniq_shirt_train", "fashioniq_toptee_train")
   TEST: ("fashioniq_dress_val", "fashioniq_shirt_val", "fashioniq_toptee_val")
+  CROP: True
 SOLVER:
   IMS_PER_BATCH: 32
   NUM_EPOCHS: 80
