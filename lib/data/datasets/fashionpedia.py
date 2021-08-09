@@ -10,7 +10,13 @@ class FashionPedia(torch.utils.data.Dataset):
     """FashionPedia dataset."""
 
     def __init__(
-        self, path, split="train", cat_type="comp", transform=None, vocab="glove"
+        self,
+        path,
+        split="train",
+        cat_type="comp",
+        transform=None,
+        vocab="glove",
+        sub_cats=None,
     ):
         super().__init__()
         self.path = path
@@ -30,6 +36,10 @@ class FashionPedia(torch.utils.data.Dataset):
         split_file = f"{path}/split_{cat_type}_{split}.json"
 
         self.all_img_names = read_json(split_file)
+        if sub_cats is not None:
+            self.all_img_names = [
+                x for x in self.all_img_names if x["target_cls"] in sub_cats
+            ]
         self.all_img_ids = {
             self.all_img_names[x]: x for x in range(len(self.all_img_names))
         }

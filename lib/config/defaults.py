@@ -9,6 +9,7 @@ _C.DATASETS = CN()
 _C.DATASETS.TRAIN = ()
 _C.DATASETS.TEST = ()
 _C.DATASETS.CROP = False
+_C.DATASETS.SUB_CATS = None
 
 # -----------------------------------------------------------------------------
 # DataLoader

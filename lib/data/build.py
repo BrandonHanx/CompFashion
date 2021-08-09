@@ -49,7 +49,10 @@ def build_dataset(cfg, dataset_catalog, is_train=True):
         args = data["args"]
         args["transform"] = build_transform(dataset_name, is_train)
         args["vocab"] = cfg.MODEL.VOCAB
-        args["crop"] = cfg.DATASETS.CROP
+        if "fashioniq" in dataset_name:
+            args["crop"] = cfg.DATASETS.CROP
+        if "fashionpedia" in dataset_name:
+            args["sub_cats"] = cfg.DATASETS.SUB_CATS
 
         # make dataset from factory
         dataset = factory(**args)
