@@ -1,6 +1,7 @@
 from .cosmo import build_cosmo
 from .mmt import build_mmt
 from .rtic import build_rtic
+from .style_rtic import build_style_rtic
 from .tirg import build_tirg
 from .trans import build_trans
 from .transdec import build_transdec
@@ -29,6 +30,8 @@ def build_composition(**kwargs):
         model = build_transdec(cfg)
     elif cfg.MODEL.COMP_MODEL == "transenc":
         model = build_transenc(cfg)
+    elif cfg.MODEL.COMP_MODEL == "style_rtic":
+        model = build_style_rtic(cfg)
     else:
         raise NotImplementedError
     return model

@@ -44,6 +44,14 @@ class Model(nn.Module):
         return dict(bbc_loss=self.loss_func(mod_img1, img2))
 
 
+class MapModel(Model):
+    def extract_img_feature(self, imgs, single=False):
+        img_feats = self.img_model(imgs)
+        if single:
+            return self.norm_layer(img_feats.mean((2, 3)))
+        return img_feats
+
+
 class CorrModel(Model):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -250,6 +258,8 @@ def build_model(cfg):
         model = TransDecModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "corr":
         model = CorrModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "map":
+        model = MapModel(cfg)
     else:
         raise NotImplementedError
     return model
