@@ -71,7 +71,7 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
 
     if cfg.MODEL.WEIGHT != "imagenet":
         if os.path.isfile(cfg.MODEL.WEIGHT):
-            checkpointer.load(cfg.MODEL.WEIGHT)
+            checkpointer.load(cfg.MODEL.WEIGHT, cfg.MODEL.EXCEPT_KEYS)
         else:
             raise IOError("{} is not a checkpoint file".format(cfg.MODEL.WEIGHT))
 

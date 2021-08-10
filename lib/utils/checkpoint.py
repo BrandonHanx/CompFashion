@@ -44,14 +44,14 @@ class Checkpointer:
         self.logger.info("Saving checkpoint to {}".format(save_file))
         torch.save(data, save_file)
 
-    def load(self, f=None):
+    def load(self, f=None, except_keys=None):
         if not f:
             # no checkpoint could be found
             self.logger.info("No checkpoint found.")
             return {}
         self.logger.info("Loading checkpoint from {}".format(f))
         checkpoint = self._load_file(f)
-        self._load_model(checkpoint)
+        self._load_model(checkpoint, except_keys)
 
     def resume(self, f=None):
         if not f:
@@ -80,11 +80,11 @@ class Checkpointer:
 def check_key(key, except_keys):
     if except_keys is None:
         return False
-    else:
-        for except_key in except_keys:
-            if except_key in key:
-                return True
-        return False
+
+    for except_key in except_keys:
+        if except_key in key:
+            return True
+    return False
 
 
 def align_and_update_state_dicts(model_state_dict, loaded_state_dict, except_keys=None):
