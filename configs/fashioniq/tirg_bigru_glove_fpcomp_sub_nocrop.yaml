@@ -4,7 +4,7 @@ MODEL:
   COMP_MODEL: "tirg"
   LOSS: "bbc"
   VOCAB: "glove"
-  WEIGHT: "output/fashionpedia/tirg_bigru_glove/best.pth"
+  WEIGHT: "output/fashionpedia/tirg_bigru_glove_sub/best.pth"
   GRU:
     EMBEDDING_SIZE: 512
     NUM_UNITS: 1024
@@ -17,7 +17,6 @@ INPUT:
 DATASETS:
   TRAIN: ("fashioniq_dress_train", "fashioniq_shirt_train", "fashioniq_toptee_train")
   TEST: ("fashioniq_dress_val", "fashioniq_shirt_val", "fashioniq_toptee_val")
-  CROP: True
 SOLVER:
   IMS_PER_BATCH: 32
   NUM_EPOCHS: 80

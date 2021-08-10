@@ -37,9 +37,7 @@ class FashionPedia(torch.utils.data.Dataset):
 
         self.all_img_names = read_json(split_file)
         if sub_cats is not None:
-            self.all_img_names = [
-                x for x in self.all_img_names if x["target_cls"] in sub_cats
-            ]
+            self.data = [x for x in self.data if x["target_cls"] in sub_cats]
         self.all_img_ids = {
             self.all_img_names[x]: x for x in range(len(self.all_img_names))
         }

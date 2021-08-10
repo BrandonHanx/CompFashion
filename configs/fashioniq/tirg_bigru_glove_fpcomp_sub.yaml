@@ -4,7 +4,7 @@ MODEL:
   COMP_MODEL: "tirg"
   LOSS: "bbc"
   VOCAB: "glove"
-  WEIGHT: "output/fashionpedia/tirg_bigru_glove/best.pth"
+  WEIGHT: "output/fashionpedia/tirg_bigru_glove_sub/best.pth"
   GRU:
     EMBEDDING_SIZE: 512
     NUM_UNITS: 1024
