@@ -31,7 +31,7 @@ def build_composition(**kwargs):
     elif cfg.MODEL.COMP_MODEL == "transenc":
         model = build_transenc(cfg)
     elif cfg.MODEL.COMP_MODEL == "style_rtic":
-        model = build_style_rtic(cfg)
+        model = build_style_rtic(cfg, kwargs["img_channel"])
     else:
         raise NotImplementedError
     return model

@@ -10,7 +10,7 @@ class ConvFushionBlock(nn.Module):
         super().__init__()
         self.bn = nn.BatchNorm2d(text_dim + img_dim)
         self.activation = nn.LeakyReLU()
-        self.conv = nn.Linear(text_dim + img_dim, img_dim)
+        self.conv = nn.Conv2d(text_dim + img_dim, img_dim, 3, 1, 1)
 
     def forward(self, img_feat, text_feat):
         B, _, H, W = img_feat.size()
@@ -29,16 +29,16 @@ class ConvErrorEncodingBlock(nn.Module):
         super().__init__()
         half = int(img_dim / 2)
         self.sub_block_1 = nn.Sequential(
-            nn.Conv2d(img_dim, half),
+            nn.Conv2d(img_dim, half, 3, 1, 1),
             nn.BatchNorm2d(half),
             nn.LeakyReLU(),
         )
         self.sub_block_2 = nn.Sequential(
-            nn.Conv2d(half, half),
+            nn.Conv2d(half, half, 3, 1, 1),
             nn.BatchNorm2d(half),
             nn.LeakyReLU(),
         )
-        self.conv_3 = nn.Conv2d(half, img_dim)
+        self.conv_3 = nn.Conv2d(half, img_dim, 3, 1, 1)
 
     def forward(self, x):
         residual = x
@@ -52,12 +52,12 @@ class ConvGatingBlock(nn.Module):
     def __init__(self, img_dim):
         super().__init__()
         self.sub_block_1 = nn.Sequential(
-            nn.Conv2d(img_dim, img_dim),
+            nn.Conv2d(img_dim, img_dim, 3, 1, 1),
             nn.BatchNorm2d(img_dim),
             nn.LeakyReLU(),
         )
         self.sub_block_2 = nn.Sequential(
-            nn.Conv2d(img_dim, img_dim),
+            nn.Conv2d(img_dim, img_dim, 3, 1, 1),
             nn.Sigmoid(),
         )
 
@@ -100,13 +100,15 @@ class StyleRTIC(nn.Module):
         scale_feats = fused_feats
         for block in self.scale_encoding:
             scale_feats = block(scale_feats)
-        scale_feats = img_std * scale_gating + scale_feats * (1 - scale_gating)
+        scale_feats = img_std.squeeze() * scale_gating + scale_feats * (
+            1 - scale_gating
+        )
 
         bias_gating = self.bias_gating(fused_feats)
         bias_feats = fused_feats
         for block in self.bias_encoding:
             bias_feats = block(bias_feats)
-        bias_feats = img_mu * bias_gating + bias_feats * (1 - bias_gating)
+        bias_feats = img_mu.squeeze() * bias_gating + bias_feats * (1 - bias_gating)
 
         return scale_feats * content_feats.mean((2, 3)) + bias_feats
 
