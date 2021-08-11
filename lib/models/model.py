@@ -52,6 +52,14 @@ class MapModel(Model):
         return img_feats
 
 
+class DirectModel(Model):
+    def extract_img_feature(self, imgs, single=False):
+        img_feats = self.img_model(imgs)
+        if single:
+            return self.norm_layer(img_feats)
+        return img_feats
+
+
 class CorrModel(Model):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -260,6 +268,8 @@ def build_model(cfg):
         model = CorrModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "map":
         model = MapModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "direct":
+        model = DirectModel(cfg)
     else:
         raise NotImplementedError
     return model
