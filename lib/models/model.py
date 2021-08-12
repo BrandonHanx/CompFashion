@@ -44,6 +44,24 @@ class Model(nn.Module):
         return dict(bbc_loss=self.loss_func(mod_img1, img2))
 
 
+class MultiModel(Model):
+    def __init__(self, cfg, k=2):
+        super().__init__(cfg)
+        self.comp_model = nn.ModuleList(
+            [build_composition(cfg=cfg, img_channel=self.img_model.out_channels / k)]
+            * k
+        )
+        self.k = k
+
+    def compose_img_text_features(self, img_feats, text_feats):
+        chunk_img_feats = img_feats.chunk(self.k, dim=-1)
+        comp_feats = []
+        for i, chunk_img_feat in enumerate(chunk_img_feats):
+            comp_feats.append(self.comp_model[i](chunk_img_feat, text_feats))
+        comp_feats = torch.cat(comp_feats, dim=-1)
+        return self.norm_layer(comp_feats)
+
+
 class MapModel(Model):
     def extract_img_feature(self, imgs, single=False):
         img_feats = self.img_model(imgs)
@@ -270,6 +288,8 @@ def build_model(cfg):
         model = MapModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "direct":
         model = DirectModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "multi":
+        model = MultiModel(cfg)
     else:
         raise NotImplementedError
     return model
