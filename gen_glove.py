@@ -4,11 +4,11 @@ from tqdm import tqdm
 
 from lib.utils.directory import read_json
 
-glove = spacy.load("/home/ma-user/work/hanxiao/en_vectors_web_lg-2.3.0").vocab
+glove = spacy.load("en_vectors_web_lg").vocab
 
-# vocab = read_json("train_data/fashioniq/captions/vocab.json")
-vocab = read_json("train_data/fashionpedia/vocab.json")
-glove_words = np.zeros((len(vocab) + 1, 300))
+vocab = read_json("train_data/fashioniq/captions/vocab.json")
+# vocab = read_json("train_data/fashionpedia/vocab.json")
+glove_words = np.zeros((len(vocab), 300))
 no_words = []
 
 for word, idx in tqdm(vocab.items()):
@@ -18,6 +18,8 @@ for word, idx in tqdm(vocab.items()):
         no_words.append(word)
         glove_words[idx] = np.random.normal(0, 0.3, (300,))
 
-print("Unknown Words:", no_words)
+glove_words[0] *= 0
+print("Unknown Words:", len(no_words) - 5)
 
-np.save("train_data/fashionpedia/glove_vocab.npy", glove_words)
+# np.save("train_data/fashionpedia/glove_vocab.npy", glove_words)
+np.save("train_data/fashioniq/captions/glove_vocab.npy", glove_words)
