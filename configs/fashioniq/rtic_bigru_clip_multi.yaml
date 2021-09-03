@@ -1,24 +1,24 @@
 MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
-  COMP_MODEL: "tirg"
+  COMP_MODEL: "rtic"
   LOSS: "bbc"
-  VOCAB: "glove"
+  VOCAB: "clip"
   GRU:
     EMBEDDING_SIZE: 512
     NUM_UNITS: 1024
-    VOCABULARY_SIZE: 300
+    VOCABULARY_SIZE: 512
   COMP:
     EMBED_DIM: 2048
+    METHOD: "multi"
 INPUT:
   HEIGHT: 224
   WIDTH: 224
 DATASETS:
-  TRAIN: ("fashionpedia_comp_train",)
-  TEST: ("fashionpedia_comp_val",)
-  SUB_CATS: [0, 1, 10]
+  TRAIN: ("fashioniq_dress_train", "fashioniq_shirt_train", "fashioniq_toptee_train")
+  TEST: ("fashioniq_dress_val", "fashioniq_shirt_val", "fashioniq_toptee_val")
 SOLVER:
-  IMS_PER_BATCH: 128
+  IMS_PER_BATCH: 32
   NUM_EPOCHS: 80
   BASE_LR: 0.0002
   WEIGHT_DECAY: 0.00004
@@ -28,4 +28,4 @@ SOLVER:
   STEPS: (30, 50)
   WARMUP_EPOCHS: 5
 TEST:
-  IMS_PER_BATCH: 128
+  IMS_PER_BATCH: 64

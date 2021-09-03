@@ -47,18 +47,20 @@ class Model(nn.Module):
 class MultiModel(Model):
     def __init__(self, cfg, k=2):
         super().__init__(cfg)
-        self.comp_model = nn.ModuleList(
-            [build_composition(cfg=cfg, img_channel=self.img_model.out_channels / k)]
-            * k
+        self.comp_model_2 = build_composition(
+            cfg=cfg, img_channel=self.img_model.out_channels
+        )
+        self.comp_model = nn.ModuleList([self.comp_model, self.comp_model_2])
+        self.combine_fc = nn.Linear(
+            self.img_model.out_channels * k, self.img_model.out_channels
         )
         self.k = k
 
     def compose_img_text_features(self, img_feats, text_feats):
-        chunk_img_feats = img_feats.chunk(self.k, dim=-1)
         comp_feats = []
-        for i, chunk_img_feat in enumerate(chunk_img_feats):
-            comp_feats.append(self.comp_model[i](chunk_img_feat, text_feats))
-        comp_feats = torch.cat(comp_feats, dim=-1)
+        for i in range(self.k):
+            comp_feats.append(self.comp_model[i](img_feats, text_feats))
+        comp_feats = comp_feats[0] + comp_feats[1]
         return self.norm_layer(comp_feats)
 
 

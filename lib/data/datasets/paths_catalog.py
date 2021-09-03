@@ -44,6 +44,11 @@ class DatasetCatalog:
             "split": "val",
             "cat_type": "comp",
         },
+        "fashionpedia_comp_test": {
+            "path": "fashionpedia",
+            "split": "test",
+            "cat_type": "comp",
+        },
         "fashionpedia_outfit_train": {
             "path": "fashionpedia",
             "split": "train",
@@ -52,6 +57,11 @@ class DatasetCatalog:
         "fashionpedia_outfit_val": {
             "path": "fashionpedia",
             "split": "val",
+            "cat_type": "outfit",
+        },
+        "fashionpedia_outfit_test": {
+            "path": "fashionpedia",
+            "split": "test",
             "cat_type": "outfit",
         },
     }

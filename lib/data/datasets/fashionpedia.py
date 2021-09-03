@@ -33,7 +33,7 @@ class FashionPedia(torch.utils.data.Dataset):
             vocab_file = f"{path}/{vocab}_vocab.npy"
             self.vocab = np_loader(vocab_file)
 
-        split_file = f"{path}/split_{cat_type}_{split}.json"
+        split_file = f"{path}/split_crop_{split}.json"
 
         self.all_img_names = read_json(split_file)
         if sub_cats is not None:
@@ -48,7 +48,7 @@ class FashionPedia(torch.utils.data.Dataset):
         meta_info = {
             "source_img_id": self.all_img_ids[source_img_name],
             "target_img_id": self.all_img_ids[target_img_name],
-            "original_caption": self.data[idx]["caption"],
+            "original_caption": self.data[idx]["captions"],
         }
         source_image = self.get_img(source_img_name)
         target_image = self.get_img(target_img_name)

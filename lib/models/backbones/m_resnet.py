@@ -289,13 +289,13 @@ def modified_resnet101(
 
 
 def build_m_resnet(cfg):
-    if cfg.MODEL.VISUAL_MODEL in ["m_resnet50", "m_resnet"]:
+    if cfg.MODEL.IMG_MODEL in ["m_resnet50", "m_resnet"]:
         model = modified_resnet50(
             (cfg.INPUT.HEIGHT, cfg.INPUT.WIDTH),
             cfg.MODEL.RESNET.RES5_STRIDE,
             pretrained=True,
         )
-    elif cfg.MODEL.VISUAL_MODEL == "m_resnet101":
+    elif cfg.MODEL.IMG_MODEL == "m_resnet101":
         model = modified_resnet101(
             (cfg.INPUT.HEIGHT, cfg.INPUT.WIDTH),
             cfg.MODEL.RESNET.RES5_STRIDE,

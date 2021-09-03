@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-MAX_TEXT_WORDS = 30
+MAX_TEXT_WORDS = 45
 
 
 def collate_fn(batch):
