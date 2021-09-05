@@ -2,6 +2,7 @@ import torch.nn as nn
 
 from .bert import build_bert
 from .bigru import build_bigru
+from .diva import build_diva
 from .lstm import build_lstm
 from .m_resnet import build_m_resnet
 from .resnet import build_resnet
@@ -15,6 +16,8 @@ def build_img_model(cfg):
         model = build_m_resnet(cfg)
     elif cfg.MODEL.IMG_MODEL == "vqgan":  # FIXME: adapt to 8196
         model = build_vqgan()
+    elif cfg.MODEL.IMG_MODEL == "diva":
+        model = build_diva(cfg)
     else:
         raise NotImplementedError
     return model

@@ -3,12 +3,12 @@ MODEL:
   TEXT_MODEL: "bigru"
   COMP_MODEL: "tirg"
   LOSS: "bbc"
-  VOCAB: "glove"
-  WEIGHT: "output/fashionpedia/tirg_bigru_glove_sub/best.pth"
+  VOCAB: "clip"
+  WEIGHT: "output/fashionpedia/comp_tirg_bigru_clip/best.pth"
   GRU:
     EMBEDDING_SIZE: 512
     NUM_UNITS: 1024
-    VOCABULARY_SIZE: 300
+    VOCABULARY_SIZE: 512
   COMP:
     EMBED_DIM: 2048
 INPUT:

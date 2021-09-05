@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from .backbones import build_img_model, build_text_model
 from .composition import build_composition
@@ -165,112 +164,51 @@ class ProjModel(Model):
         self.img_proj_layer = nn.Linear(
             self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
-        self.text_proj_layer = nn.Sequential(
-            nn.Dropout(p=0.1),
-            nn.Linear(self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM),
+        self.comp_model = build_composition(
+            cfg=cfg, img_channel=cfg.MODEL.COMP.EMBED_DIM
         )
 
-    def norm_and_avgpool(self, x):
-        return self.norm_layer(self.img_proj_layer(x.mean((2, 3))))
+    def extract_img_feature(self, imgs, single=False):
+        img_feats = self.img_proj_layer(self.img_model(imgs).mean((2, 3)))
+        if single:
+            return self.norm_layer(img_feats)
+        return img_feats
+
+
+class DIVA(Model):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.comp_model = build_composition(
+            cfg=cfg, img_channel=cfg.MODEL.COMP.EMBED_DIM
+        )
 
     def extract_img_feature(self, imgs, single=False):
         img_feats = self.img_model(imgs)
         if single:
-            return self.norm_and_avgpool(img_feats)
-        return img_feats
-
-    def extract_text_feature(self, texts, text_lengths):
-        return self.text_proj_layer(self.text_model(texts, text_lengths))
-
-    def compose_img_text_features(self, img_feats, text_feats):
-        comp_feats = self.comp_model(img_feats, text_feats)
-        return self.norm_and_avgpool(comp_feats)
-
-
-class TransModel(Model):
-    def __init__(self, cfg):
-        super().__init__(cfg)
-        embed_dim = cfg.MODEL.COMP.EMBED_DIM
-        self.img_proj_layer = nn.Sequential(
-            nn.Linear(self.img_model.out_channels, embed_dim),
-            nn.LeakyReLU(negative_slope=0.2),
-        )
-
-        self.text_proj_layer = nn.Sequential(
-            nn.Linear(self.text_model.out_channels, embed_dim),
-            nn.LeakyReLU(negative_slope=0.2),
-        )
-
-    def extract_img_feature(self, imgs, single=False):
-        img_feats = (
-            self.img_model(imgs).flatten(start_dim=-2, end_dim=-1).transpose(-2, -1)
-        )
-        img_feats = self.img_proj_layer(img_feats)
-        if single:
-            img_feats = self.comp_model(img_feats)
+            img_feats = torch.cat(
+                [
+                    img_feats["discriminative"],
+                    img_feats["selfsimilarity"],
+                    img_feats["shared"],
+                    img_feats["intra"],
+                ],
+                dim=1,
+            )
             return self.norm_layer(img_feats)
         return img_feats
 
-    def extract_text_feature(self, texts, text_lengths):
-        return self.text_proj_layer(self.text_model(texts, text_lengths))
-
-
-class TransDecModel(nn.Module):
-    def __init__(self, cfg):
-        super().__init__()
-        embed_dim = cfg.MODEL.COMP.EMBED_DIM
-
-        self.img_model = build_img_model(cfg).eval()
-        self.img_model.train = self._disabled_train
-
-        self.comp_model = build_composition(cfg=cfg)
-        self.text_model = build_text_model(cfg)
-        self.text_proj_layer = nn.Sequential(
-            nn.Linear(self.text_model.out_channels, embed_dim),
-            nn.LeakyReLU(negative_slope=0.2),
-        )
-
-    def _disabled_train(self, mode=True):
-        return self
-
-    def extract_img_feature(self, imgs):
-        imgs = imgs * 2 - 1
-        _, indices = self.img_model.encode(imgs)
-        return indices.flatten(1, -1)
-
-    def extract_text_feature(self, texts, text_lengths):
-        return self.text_proj_layer(self.text_model(texts, text_lengths))
-
-    def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
-        ref_indices = self.extract_img_feature(imgs_query).long()
-        tgt_indices = self.extract_img_feature(imgs_target).long()
-        text_feat = self.extract_text_feature(mod_texts, text_lengths)
-
-        pred_logits = self.comp_model(ref_indices, text_feat, tgt_indices)
-        loss = dict(
-            ce=F.cross_entropy(
-                pred_logits.view(-1, pred_logits.size(-1)), tgt_indices.view(-1)
+    def compose_img_text_features(self, img_feats, text_feats):
+        return self.norm_layer(
+            torch.cat(
+                [
+                    self.comp_model(img_feats["discriminative"], text_feats),
+                    self.comp_model(img_feats["selfsimilarity"], text_feats),
+                    self.comp_model(img_feats["shared"], text_feats),
+                    self.comp_model(img_feats["intra"], text_feats),
+                ],
+                dim=1,
             )
         )
-        return loss
-
-    @torch.no_grad()
-    def reconstruct(self, imgs_query, mod_texts, text_lengths, imgs_target):
-        ref_indices = self.extract_img_feature(imgs_query).long()
-        tgt_indices = self.extract_img_feature(imgs_target).long()
-        text_feat = self.extract_text_feature(mod_texts, text_lengths)
-
-        pred_indices = self.comp_model.sample(
-            ref_indices.flatten(1, -1), text_feat, tgt_indices.flatten(1, -1)
-        )
-        tgt_img = self.img_model.decode_code(tgt_indices.view(-1, 16, 16))
-        pred_img = self.img_model.decode_code(pred_indices.view(-1, 16, 16))
-        return self.to_rgb(pred_img), self.to_rgb(tgt_img)
-
-    @staticmethod
-    def to_rgb(img):
-        img = (img + 1.0) / 2.0
-        return img.clamp(0, 1)
 
 
 def build_model(cfg):
@@ -280,10 +218,6 @@ def build_model(cfg):
         model = ProjModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "multi-scale":
         model = MultiScaleModel(cfg)
-    elif cfg.MODEL.COMP.METHOD == "trans":
-        model = TransModel(cfg)
-    elif cfg.MODEL.COMP.METHOD == "transdec":
-        model = TransDecModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "corr":
         model = CorrModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "map":
@@ -292,6 +226,8 @@ def build_model(cfg):
         model = DirectModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "multi":
         model = MultiModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "diva":
+        model = DIVA(cfg)
     else:
         raise NotImplementedError
     return model

@@ -3,21 +3,20 @@ MODEL:
   TEXT_MODEL: "bigru"
   COMP_MODEL: "tirg"
   LOSS: "bbc"
-  VOCAB: "glove"
-  WEIGHT: "output/fashionpedia/tirg_bigru_glove_sub/best.pth"
+  VOCAB: "clip"
   GRU:
     EMBEDDING_SIZE: 512
-    NUM_UNITS: 1024
-    VOCABULARY_SIZE: 300
+    NUM_UNITS: 256
+    VOCABULARY_SIZE: 512
   COMP:
-    EMBED_DIM: 2048
+    EMBED_DIM: 512
+    METHOD: "proj"
 INPUT:
   HEIGHT: 224
   WIDTH: 224
 DATASETS:
   TRAIN: ("fashioniq_dress_train", "fashioniq_shirt_train", "fashioniq_toptee_train")
   TEST: ("fashioniq_dress_val", "fashioniq_shirt_val", "fashioniq_toptee_val")
-  CROP: True
 SOLVER:
   IMS_PER_BATCH: 32
   NUM_EPOCHS: 80
