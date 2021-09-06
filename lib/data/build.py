@@ -4,7 +4,7 @@ import torchvision.transforms as T
 from lib.utils.comm import get_world_size
 
 from . import datasets as D
-from .collate_batch import collate_fn, init_collate_fn
+from .collate_batch import collate_fn, quintuple_collate_fn
 from .datasets import DatasetCatalog
 
 
@@ -118,7 +118,9 @@ def build_data_loader(cfg, is_train=True, is_distributed=False):
             dataset,
             num_workers=num_workers,
             batch_sampler=batch_sampler,
-            collate_fn=init_collate_fn if cfg.MODEL.VOCAB == "init" else collate_fn,
+            collate_fn=quintuple_collate_fn
+            if "fashionpedia_combine" in cfg.DATASETS.TRAIN
+            else collate_fn,
         )
         data_loaders.append(data_loader)
     if is_train:

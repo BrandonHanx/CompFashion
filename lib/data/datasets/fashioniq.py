@@ -3,12 +3,12 @@ import os
 import numpy as np
 import PIL
 import torch
-import torch.utils.data
+from torch.utils.data import Dataset
 
 from lib.utils.directory import np_loader, read_json
 
 
-class FashionIQ(torch.utils.data.Dataset):
+class FashionIQ(Dataset):
     """FashionIQ dataset."""
 
     def __init__(

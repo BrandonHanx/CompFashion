@@ -4,8 +4,7 @@ import torch
 MAX_TEXT_WORDS = 45
 
 
-def collate_fn(batch):
-    text_feature, source, target, meta_info = zip(*batch)
+def pad_text(text_feature):
     batch_size = len(text_feature)
     text_dim = text_feature[0].shape[-1]
     text_lengths = [len(x) for x in text_feature]
@@ -14,6 +13,12 @@ def collate_fn(batch):
     text = np.zeros((batch_size, max_text_words, text_dim))
     for i, feature in enumerate(text_feature):
         text[i, : text_lengths[i], :] = feature[:max_text_words]
+    return text, text_lengths
+
+
+def collate_fn(batch):
+    text_feature, source, target, meta_info = zip(*batch)
+    text, text_lengths = pad_text(text_feature)
 
     source_img_ids, target_image_ids, original_captions = [], [], []
     for info in meta_info:
@@ -31,6 +36,30 @@ def collate_fn(batch):
         "text_lengths": torch.LongTensor(text_lengths),
         "source_images": torch.stack(source),
         "target_images": torch.stack(target),
+        "meta_info": meta_info,
+    }
+
+
+def quintuple_collate_fn(batch):
+    (
+        source_images,
+        comp_target_images,
+        outfit_target_images,
+        comp_text,
+        outfit_text,
+        meta_info,
+    ) = zip(*batch)
+    comp_text, comp_text_lengths = pad_text(comp_text)
+    outfit_text, outfit_text_lengths = pad_text(outfit_text)
+
+    return {
+        "comp_text": torch.FloatTensor(comp_text),
+        "outfit_text": torch.FloatTensor(outfit_text),
+        "comp_text_lengths": torch.LongTensor(comp_text_lengths),
+        "outfit_text_lengths": torch.LongTensor(outfit_text_lengths),
+        "source_images": torch.stack(source_images),
+        "comp_target_images": torch.stack(comp_target_images),
+        "outfit_target_images": torch.stack(outfit_target_images),
         "meta_info": meta_info,
     }
 

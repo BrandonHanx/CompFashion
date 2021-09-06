@@ -64,6 +64,9 @@ class DatasetCatalog:
             "split": "test",
             "cat_type": "outfit",
         },
+        "fashionpedia_combine": {
+            "path": "fashionpedia",
+        },
     }
 
     @staticmethod
@@ -90,6 +93,16 @@ class DatasetCatalog:
             )
             return dict(
                 factory="FashionPedia",
+                args=args,
+            )
+        if "fashionpedia_combine" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                path=os.path.join(data_dir, attrs["path"]),
+            )
+            return dict(
+                factory="FashionPediaCombine",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))
