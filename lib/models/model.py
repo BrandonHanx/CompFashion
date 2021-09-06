@@ -15,7 +15,9 @@ class Model(nn.Module):
         self.img_model = build_img_model(cfg)
         self.text_model = build_text_model(cfg)
         self.comp_model = build_composition(
-            cfg=cfg, img_channel=self.img_model.out_channels
+            cfg=cfg,
+            img_channel=self.img_model.out_channels,
+            text_channel=self.text_model.out_channels,
         )
         self.norm_layer = build_norm_layer(cfg)
         self.loss_func = build_loss_func(cfg)
@@ -47,7 +49,9 @@ class MultiModel(Model):
     def __init__(self, cfg, k=2):
         super().__init__(cfg)
         self.comp_model_2 = build_composition(
-            cfg=cfg, img_channel=self.img_model.out_channels
+            cfg=cfg,
+            img_channel=self.img_model.out_channels,
+            text_channel=self.text_model.out_channels,
         )
         self.comp_model = nn.ModuleList([self.comp_model, self.comp_model_2])
         self.combine_fc = nn.Linear(
@@ -121,7 +125,9 @@ class MultiScaleModel(nn.Module):
         )
         self.comp_model = nn.ModuleList(
             [
-                build_composition(cfg=cfg, img_channel=x)
+                build_composition(
+                    cfg=cfg, img_channel=x, text_channel=self.text_model.out_channels
+                )
                 for x in self.img_model.out_channels
             ]
         )
@@ -165,7 +171,9 @@ class ProjModel(Model):
             self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
         self.comp_model = build_composition(
-            cfg=cfg, img_channel=cfg.MODEL.COMP.EMBED_DIM
+            cfg=cfg,
+            img_channel=cfg.MODEL.COMP.EMBED_DIM,
+            text_channel=self.text_model.out_channels,
         )
 
     def extract_img_feature(self, imgs, single=False):
@@ -179,7 +187,9 @@ class DIVA(Model):
     def __init__(self, cfg):
         super().__init__(cfg)
         self.comp_model = build_composition(
-            cfg=cfg, img_channel=cfg.MODEL.COMP.EMBED_DIM
+            cfg=cfg,
+            img_channel=cfg.MODEL.COMP.EMBED_DIM,
+            text_channel=self.text_model.out_channels,
         )
 
     def extract_img_feature(self, imgs, single=False):

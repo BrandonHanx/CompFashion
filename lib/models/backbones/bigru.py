@@ -110,7 +110,7 @@ def build_bigru(cfg):
             drop_out,
         )
 
-    if cfg.MODEL.GRU.FREEZE:
+    if cfg.MODEL.T_FREEZE:
         for m in [model.embed, model.gru]:
             m.eval()
             for param in m.parameters():

@@ -7,7 +7,7 @@ import torch.nn as nn
 
 
 class DIVA(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, embed_dim):
         super().__init__()
 
         self.model = ptm.__dict__["resnet50"](num_classes=1000, pretrained="imagenet")
@@ -19,13 +19,13 @@ class DIVA(torch.nn.Module):
         self.feature_dim = self.model.last_linear.in_features
         out_dict = nn.ModuleDict()
         for mode in ["discriminative", "selfsimilarity", "shared", "intra"]:
-            out_dict[mode] = torch.nn.Linear(self.feature_dim, 512)
+            out_dict[mode] = torch.nn.Linear(self.feature_dim, embed_dim)
 
         self.model.last_linear = out_dict
         self.layer_blocks = nn.ModuleList(
             [self.model.layer1, self.model.layer2, self.model.layer3, self.model.layer4]
         )
-        self.out_channels = 2048
+        self.out_channels = embed_dim * 4
 
     def forward(self, x):
         x = self.model.maxpool(self.model.relu(self.model.bn1(self.model.conv1(x))))
@@ -42,6 +42,14 @@ class DIVA(torch.nn.Module):
 
 
 def build_diva(cfg):
-    model = DIVA()
-    model.load_state_dict(torch.load("pretrained/diva_512.pth.tar"))
+    embed_dim = cfg.MODEL.COMP.EMBED_DIM
+    model = DIVA(embed_dim)
+    model.load_state_dict(torch.load("pretrained/diva_{}.pth.tar".format(embed_dim)))
+
+    if cfg.MODEL.I_FREEZE:
+        for m in model:
+            m.eval()
+            for param in m.parameters():
+                param.requires_grad = False
+
     return model

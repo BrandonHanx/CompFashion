@@ -258,7 +258,7 @@ def build_resnet(cfg):
             pretrained=pretrained,
         )
 
-    if cfg.MODEL.RESNET.FREEZE:
+    if cfg.MODEL.I_FREEZE:
         for m in [model.conv1, model.bn1, model.layer1, model.layer2, model.layer3]:
             m.eval()
             for param in m.parameters():

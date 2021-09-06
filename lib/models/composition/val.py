@@ -3,9 +3,9 @@ import torch.nn as nn
 
 
 class VAL(nn.Module):
-    def __init__(self, embed_dim, img_channel):
+    def __init__(self, text_channel, img_channel):
         super().__init__()
-        self.conv1 = nn.Conv2d(embed_dim + img_channel, img_channel, 1)
+        self.conv1 = nn.Conv2d(text_channel + img_channel, img_channel, 1)
         self.att_ch_conv = nn.Conv2d(img_channel, img_channel, 1)
         self.att_sp_conv = nn.Conv2d(1, 1, 3, padding=1)
 
@@ -44,5 +44,5 @@ class VAL(nn.Module):
         return composite_features
 
 
-def build_val(cfg, img_channel):
-    return VAL(cfg.MODEL.COMP.EMBED_DIM, img_channel)
+def build_val(text_channel, img_channel):
+    return VAL(text_channel, img_channel)

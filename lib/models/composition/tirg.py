@@ -10,21 +10,21 @@ class TIRG(nn.Module):
     CVPR 2019. arXiv:1812.07119
     """
 
-    def __init__(self, embed_dim, img_channel):
+    def __init__(self, text_channel, img_channel):
         super().__init__()
 
         self.a = torch.nn.Parameter(torch.tensor([1.0, 10.0, 1.0, 1.0]))
         self.gated_feature_composer = torch.nn.Sequential(
-            torch.nn.BatchNorm1d(img_channel + embed_dim),
+            torch.nn.BatchNorm1d(img_channel + text_channel),
             torch.nn.ReLU(),
-            torch.nn.Linear(img_channel + embed_dim, img_channel),
+            torch.nn.Linear(img_channel + text_channel, img_channel),
         )
         self.res_info_composer = torch.nn.Sequential(
-            torch.nn.BatchNorm1d(img_channel + embed_dim),
+            torch.nn.BatchNorm1d(img_channel + text_channel),
             torch.nn.ReLU(),
-            torch.nn.Linear(img_channel + embed_dim, img_channel + embed_dim),
+            torch.nn.Linear(img_channel + text_channel, img_channel + text_channel),
             torch.nn.ReLU(),
-            torch.nn.Linear(img_channel + embed_dim, img_channel),
+            torch.nn.Linear(img_channel + text_channel, img_channel),
         )
 
     def forward(self, img_features, text_features):
@@ -35,5 +35,5 @@ class TIRG(nn.Module):
         return f
 
 
-def build_tirg(cfg, img_channel):
-    return TIRG(cfg.MODEL.COMP.EMBED_DIM, img_channel)
+def build_tirg(text_channel, img_channel):
+    return TIRG(text_channel, img_channel)

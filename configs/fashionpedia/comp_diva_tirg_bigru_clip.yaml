@@ -1,12 +1,13 @@
 MODEL:
   IMG_MODEL: "diva"
+  I_FREEZE: True
   TEXT_MODEL: "bigru"
   COMP_MODEL: "tirg"
   LOSS: "bbc"
   VOCAB: "clip"
   GRU:
     EMBEDDING_SIZE: 512
-    NUM_UNITS: 256
+    NUM_UNITS: 512
     VOCABULARY_SIZE: 512
   COMP:
     EMBED_DIM: 512

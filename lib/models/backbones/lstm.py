@@ -112,7 +112,7 @@ def build_lstm(cfg):
             drop_out,
         )
 
-    if cfg.MODEL.GRU.FREEZE:
+    if cfg.MODEL.T_FREEZE:
         for m in [model.embed, model.lstm]:
             m.eval()
             for param in m.parameters():

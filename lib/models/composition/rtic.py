@@ -76,5 +76,5 @@ class RTIC(nn.Module):
         return x
 
 
-def build_rtic(cfg, img_channel):
-    return RTIC(cfg.MODEL.COMP.EMBED_DIM, img_channel, n=4)
+def build_rtic(text_channel, img_channel):
+    return RTIC(text_channel, img_channel, n=4)

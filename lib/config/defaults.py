@@ -40,6 +40,9 @@ _C.MODEL.LOSS = "bbc"
 _C.MODEL.VOCAB = "glove"
 _C.MODEL.WEIGHT = "imagenet"
 _C.MODEL.EXCEPT_KEYS = None
+_C.MODEL.I_FREEZE = False
+_C.MODEL.T_FREEZE = False
+
 
 # -----------------------------------------------------------------------------
 # GRU
@@ -49,7 +52,6 @@ _C.MODEL.GRU.EMBEDDING_SIZE = 512
 _C.MODEL.GRU.NUM_UNITS = 512
 _C.MODEL.GRU.VOCABULARY_SIZE = 12000
 _C.MODEL.GRU.DROPOUT = 0.0
-_C.MODEL.GRU.FREEZE = False
 _C.MODEL.GRU.NUM_LAYER = 1
 
 # -----------------------------------------------------------------------------
@@ -57,7 +59,6 @@ _C.MODEL.GRU.NUM_LAYER = 1
 # -----------------------------------------------------------------------------
 _C.MODEL.BERT = CN()
 _C.MODEL.BERT.POOL = True
-_C.MODEL.BERT.FREEZE = False
 
 # -----------------------------------------------------------------------------
 # Resnet
@@ -66,7 +67,6 @@ _C.MODEL.RESNET = CN()
 _C.MODEL.RESNET.RES5_STRIDE = 2
 _C.MODEL.RESNET.RES5_DILATION = 1
 _C.MODEL.RESNET.PRETRAINED = None
-_C.MODEL.RESNET.FREEZE = False
 
 # -----------------------------------------------------------------------------
 # Composition
