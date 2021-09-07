@@ -14,6 +14,7 @@ from lib.utils.comm import all_gather, is_main_process, synchronize
 def compute_on_dataset(model, data_loader, device):
     model.eval()
     query_feats, query_ids, gallery_feats = [], [], []
+    comp_mode = "comp" in data_loader.dataset.name
 
     for batch_data in tqdm(data_loader):
         imgs = batch_data["source_images"].to(device)
@@ -21,7 +22,7 @@ def compute_on_dataset(model, data_loader, device):
         text_lengths = batch_data["text_lengths"].to(device)
         query_ids.extend(batch_data["meta_info"]["target_image_ids"])
         with torch.no_grad():
-            query_feat = model.compose_img_text(imgs, texts, text_lengths)
+            query_feat = model.compose_img_text(imgs, texts, text_lengths, comp_mode)
             # if isinstance(query_feat, list):
             #     query_feat = torch.cat(query_feat, dim=-1)
             query_feats.append(query_feat)
@@ -31,7 +32,9 @@ def compute_on_dataset(model, data_loader, device):
     ):
         imgs = imgs.to(device)
         with torch.no_grad():
-            gallery_feat = model.extract_img_feature(imgs, single=True)
+            gallery_feat = model.extract_img_feature(
+                imgs, single=True, comp_mode=comp_mode
+            )
             # if isinstance(gallery_feat, list):
             #     gallery_feat = torch.cat(gallery_feat, dim=-1)
             gallery_feats.append(gallery_feat)

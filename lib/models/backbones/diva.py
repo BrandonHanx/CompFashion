@@ -1,6 +1,3 @@
-"""
-The network architectures and weights are adapted and used from the great https://github.com/Cadene/pretrained-models.pytorch.
-"""
 import pretrainedmodels as ptm
 import torch
 import torch.nn as nn
@@ -47,7 +44,7 @@ def build_diva(cfg):
     model.load_state_dict(torch.load("pretrained/diva_{}.pth.tar".format(embed_dim)))
 
     if cfg.MODEL.I_FREEZE:
-        for m in model:
+        for m in model.model.last_linear.values():
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False

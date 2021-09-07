@@ -79,14 +79,33 @@ def do_train(
             iteration += 1
             arguments["iteration"] = iteration
 
-            imgs_query = batch_data["source_images"].to(device)
-            mod_texts = batch_data["text"].to(device)
-            text_lengths = batch_data["text_lengths"].to(device)
-            imgs_target = batch_data["target_images"].to(device)
+            if "text" in batch_data:
+                imgs_query = batch_data["source_images"].to(device)
+                mod_texts = batch_data["text"].to(device)
+                text_lengths = batch_data["text_lengths"].to(device)
+                imgs_target = batch_data["target_images"].to(device)
 
-            loss_dict = model.compute_loss(
-                imgs_query, mod_texts, text_lengths, imgs_target
-            )
+                loss_dict = model.compute_loss(
+                    imgs_query, mod_texts, text_lengths, imgs_target
+                )
+            else:
+                imgs_query = batch_data["source_images"].to(device)
+                comp_text = batch_data["comp_text"].to(device)
+                comp_text_lengths = batch_data["comp_text_lengths"].to(device)
+                comp_imgs_target = batch_data["comp_target_images"].to(device)
+                outfit_text = batch_data["outfit_text"].to(device)
+                outfit_text_lengths = batch_data["outfit_text_lengths"].to(device)
+                outfit_imgs_target = batch_data["outfit_target_images"].to(device)
+
+                loss_dict = model.compute_loss(
+                    imgs_query,
+                    comp_text,
+                    comp_text_lengths,
+                    comp_imgs_target,
+                    outfit_text,
+                    outfit_text_lengths,
+                    outfit_imgs_target,
+                )
             losses = sum(loss for loss in loss_dict.values())
 
             # reduce losses over all GPUs for logging purposes

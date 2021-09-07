@@ -29,7 +29,7 @@ class FashionPediaCombine(Dataset):
             vocab_file = f"{path}/{vocab}_vocab.npy"
             self.vocab = np_loader(vocab_file)
 
-        all_img_names = read_json(f"{path}/split_train.json")
+        all_img_names = read_json(f"{path}/split_crop_train.json")
         all_img_id_dict = {all_img_names[x]: x for x in range(len(all_img_names))}
 
         outfit_img_ids = []

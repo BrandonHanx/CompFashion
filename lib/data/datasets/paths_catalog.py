@@ -83,6 +83,16 @@ class DatasetCatalog:
                 factory="FashionIQ",
                 args=args,
             )
+        if "fashionpedia_combine" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                path=os.path.join(data_dir, attrs["path"]),
+            )
+            return dict(
+                factory="FashionPediaCombine",
+                args=args,
+            )
         if "fashionpedia" in name:
             data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
@@ -93,16 +103,6 @@ class DatasetCatalog:
             )
             return dict(
                 factory="FashionPedia",
-                args=args,
-            )
-        if "fashionpedia_combine" in name:
-            data_dir = DatasetCatalog.DATA_DIR
-            attrs = DatasetCatalog.DATASETS[name]
-            args = dict(
-                path=os.path.join(data_dir, attrs["path"]),
-            )
-            return dict(
-                factory="FashionPediaCombine",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))

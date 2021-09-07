@@ -1,16 +1,16 @@
 MODEL:
-  IMG_MODEL: "diva"
+  IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
   COMP_MODEL: "tirg"
   LOSS: "bbc"
   VOCAB: "clip"
   GRU:
     EMBEDDING_SIZE: 512
-    NUM_UNITS: 256
+    NUM_UNITS: 1024
     VOCABULARY_SIZE: 512
   COMP:
-    EMBED_DIM: 512
-    METHOD: "diva"
+    EMBED_DIM: 2048
+    METHOD: "combine"
 INPUT:
   HEIGHT: 224
   WIDTH: 224
@@ -18,7 +18,7 @@ DATASETS:
   TRAIN: ("fashionpedia_combine",)
   TEST: ("fashionpedia_comp_val", "fashionpedia_outfit_val")
 SOLVER:
-  IMS_PER_BATCH: 128
+  IMS_PER_BATCH: 64
   NUM_EPOCHS: 40
   BASE_LR: 0.0002
   WEIGHT_DECAY: 0.00004

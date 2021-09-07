@@ -119,7 +119,7 @@ def build_data_loader(cfg, is_train=True, is_distributed=False):
             num_workers=num_workers,
             batch_sampler=batch_sampler,
             collate_fn=quintuple_collate_fn
-            if "fashionpedia_combine" in cfg.DATASETS.TRAIN
+            if "combine" in dataset.name
             else collate_fn,
         )
         data_loaders.append(data_loader)

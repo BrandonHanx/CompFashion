@@ -34,7 +34,7 @@ class Model(nn.Module):
     def compose_img_text_features(self, img_feats, text_feats):
         return self.norm_layer(self.comp_model(img_feats, text_feats))
 
-    def compose_img_text(self, imgs, texts, text_lengths):
+    def compose_img_text(self, imgs, texts, text_lengths, comp_mode=True):
         img_feats = self.extract_img_feature(imgs)
         text_feats = self.extract_text_feature(texts, text_lengths)
         return self.compose_img_text_features(img_feats, text_feats)
@@ -43,6 +43,132 @@ class Model(nn.Module):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, single=True)
         return dict(bbc_loss=self.loss_func(mod_img1, img2))
+
+
+class CombineModel(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        self.img_model = build_img_model(cfg)
+        self.text_model = build_text_model(cfg)
+        self.comp_model = build_composition(
+            cfg=cfg,
+            img_channel=self.img_model.out_channels,
+            text_channel=self.text_model.out_channels,
+        )
+        self.outfit_model = build_composition(
+            cfg=cfg,
+            img_channel=self.img_model.out_channels,
+            text_channel=self.text_model.out_channels,
+        )
+        self.norm_layer = build_norm_layer(cfg)
+        self.loss_func = build_loss_func(cfg)
+
+    def extract_img_feature(self, imgs, single=False, comp_mode=True):
+        img_feats = self.img_model(imgs).mean((2, 3))
+        if single:
+            return self.norm_layer(img_feats)
+        return img_feats
+
+    def extract_text_feature(self, texts, text_lengths):
+        return self.text_model(texts, text_lengths)
+
+    def compose_img_text_features(self, img_feats, text_feats, comp_mode=True):
+        if comp_mode:
+            return self.norm_layer(self.comp_model(img_feats, text_feats))
+        else:
+            return self.norm_layer(self.outfit_model(img_feats, text_feats))
+
+    def compose_img_text(self, imgs, texts, text_lengths, comp_mode=True):
+        img_feats = self.extract_img_feature(imgs, comp_mode)
+        text_feats = self.extract_text_feature(texts, text_lengths)
+        return self.compose_img_text_features(img_feats, text_feats, comp_mode)
+
+    def compute_loss(
+        self,
+        imgs_query,
+        comp_text,
+        comp_text_lengths,
+        comp_imgs_target,
+        outfit_text,
+        outfit_text_lengths,
+        outfit_imgs_target,
+    ):
+        source_img_feat = self.extract_img_feature(imgs_query)
+        comp_target_img_feat = self.extract_img_feature(comp_imgs_target, single=True)
+        outfit_target_img_feat = self.extract_img_feature(
+            outfit_imgs_target, single=True
+        )
+        comp_text_feat = self.extract_text_feature(comp_text, comp_text_lengths)
+        outfit_text_feat = self.extract_text_feature(outfit_text, outfit_text_lengths)
+        comp_feat = self.compose_img_text_features(
+            source_img_feat, comp_text_feat, True
+        )
+        outfit_feat = self.compose_img_text_features(
+            source_img_feat, outfit_text_feat, False
+        )
+        comp_loss = self.loss_func(comp_feat, comp_target_img_feat)
+        outfit_loss = self.loss_func(outfit_feat, outfit_target_img_feat)
+        return dict(comp_loss=comp_loss, outfit_loss=outfit_loss)
+
+
+class CombineProjModel(CombineModel):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.comp_model = build_composition(
+            cfg=cfg,
+            img_channel=cfg.MODEL.COMP.EMBED_DIM,
+            text_channel=self.text_model.out_channels,
+        )
+        self.outfit_model = build_composition(
+            cfg=cfg,
+            img_channel=cfg.MODEL.COMP.EMBED_DIM,
+            text_channel=self.text_model.out_channels,
+        )
+        self.comp_proj = nn.Linear(
+            self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
+        self.outfit_proj = nn.Linear(
+            self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
+
+    def extract_img_feature(self, imgs, single=False, comp_mode=True):
+        img_feats = self.img_model(imgs).mean((2, 3))
+        if comp_mode:
+            img_feats = self.comp_proj(img_feats)
+        else:
+            img_feats = self.outfit_proj(img_feats)
+        if single:
+            return self.norm_layer(img_feats)
+        return img_feats
+
+    def compute_loss(
+        self,
+        imgs_query,
+        comp_text,
+        comp_text_lengths,
+        comp_imgs_target,
+        outfit_text,
+        outfit_text_lengths,
+        outfit_imgs_target,
+    ):
+        source_img_feat = self.img_model(imgs_query).mean((2, 3))
+        comp_target_img_feat = self.extract_img_feature(
+            comp_imgs_target, single=True, comp_mode=True
+        )
+        outfit_target_img_feat = self.extract_img_feature(
+            outfit_imgs_target, single=True, comp_mode=False
+        )
+        comp_text_feat = self.extract_text_feature(comp_text, comp_text_lengths)
+        outfit_text_feat = self.extract_text_feature(outfit_text, outfit_text_lengths)
+        comp_feat = self.compose_img_text_features(
+            self.comp_proj(source_img_feat), comp_text_feat, True
+        )
+        outfit_feat = self.compose_img_text_features(
+            self.outfit_proj(source_img_feat), outfit_text_feat, False
+        )
+        comp_loss = self.loss_func(comp_feat, comp_target_img_feat)
+        outfit_loss = self.loss_func(outfit_feat, outfit_target_img_feat)
+        return dict(comp_loss=comp_loss, outfit_loss=outfit_loss)
 
 
 class MultiModel(Model):
@@ -238,6 +364,10 @@ def build_model(cfg):
         model = MultiModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "diva":
         model = DIVA(cfg)
+    elif cfg.MODEL.COMP.METHOD == "combine":
+        model = CombineModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "combine-proj":
+        model = CombineProjModel(cfg)
     else:
         raise NotImplementedError
     return model
