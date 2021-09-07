@@ -78,7 +78,7 @@ class CombineModel(nn.Module):
         return self.norm_layer(self.outfit_model(img_feats, text_feats))
 
     def compose_img_text(self, imgs, texts, text_lengths, comp_mode=True):
-        img_feats = self.extract_img_feature(imgs, comp_mode)
+        img_feats = self.extract_img_feature(imgs, norm=False, comp_mode=comp_mode)
         text_feats = self.extract_text_feature(texts, text_lengths)
         return self.compose_img_text_features(img_feats, text_feats, comp_mode)
 
@@ -93,15 +93,19 @@ class CombineModel(nn.Module):
         outfit_imgs_target,
     ):
         source_img_feat = self.extract_img_feature(imgs_query)
-        comp_target_img_feat = self.extract_img_feature(comp_imgs_target, norm=True)
-        outfit_target_img_feat = self.extract_img_feature(outfit_imgs_target, norm=True)
+        comp_target_img_feat = self.extract_img_feature(
+            comp_imgs_target, norm=True, comp_mode=True
+        )
+        outfit_target_img_feat = self.extract_img_feature(
+            outfit_imgs_target, norm=True, comp_mode=False
+        )
         comp_text_feat = self.extract_text_feature(comp_text, comp_text_lengths)
         outfit_text_feat = self.extract_text_feature(outfit_text, outfit_text_lengths)
         comp_feat = self.compose_img_text_features(
-            source_img_feat, comp_text_feat, True
+            source_img_feat, comp_text_feat, comp_mode=True
         )
         outfit_feat = self.compose_img_text_features(
-            source_img_feat, outfit_text_feat, False
+            source_img_feat, outfit_text_feat, comp_mode=False
         )
         comp_loss = self.loss_func(comp_feat, comp_target_img_feat)
         outfit_loss = self.loss_func(outfit_feat, outfit_target_img_feat)
@@ -158,10 +162,10 @@ class CombineProjModel(CombineModel):
         comp_text_feat = self.extract_text_feature(comp_text, comp_text_lengths)
         outfit_text_feat = self.extract_text_feature(outfit_text, outfit_text_lengths)
         comp_feat = self.compose_img_text_features(
-            self.comp_proj(source_img_feat), comp_text_feat, True
+            self.comp_proj(source_img_feat), comp_text_feat, comp_mode=True
         )
         outfit_feat = self.compose_img_text_features(
-            self.outfit_proj(source_img_feat), outfit_text_feat, False
+            self.outfit_proj(source_img_feat), outfit_text_feat, comp_mode=False
         )
         comp_loss = self.loss_func(comp_feat, comp_target_img_feat)
         outfit_loss = self.loss_func(outfit_feat, outfit_target_img_feat)
