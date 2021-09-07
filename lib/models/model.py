@@ -22,9 +22,9 @@ class Model(nn.Module):
         self.norm_layer = build_norm_layer(cfg)
         self.loss_func = build_loss_func(cfg)
 
-    def extract_img_feature(self, imgs, single=False):
+    def extract_img_feature(self, imgs, norm=False, comp_mode=True):
         img_feats = self.img_model(imgs).mean((2, 3))
-        if single:
+        if norm:
             return self.norm_layer(img_feats)
         return img_feats
 
@@ -41,7 +41,7 @@ class Model(nn.Module):
 
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
-        img2 = self.extract_img_feature(imgs_target, single=True)
+        img2 = self.extract_img_feature(imgs_target, norm=True)
         return dict(bbc_loss=self.loss_func(mod_img1, img2))
 
 
@@ -63,9 +63,9 @@ class CombineModel(nn.Module):
         self.norm_layer = build_norm_layer(cfg)
         self.loss_func = build_loss_func(cfg)
 
-    def extract_img_feature(self, imgs, single=False, comp_mode=True):
+    def extract_img_feature(self, imgs, norm=False, comp_mode=True):
         img_feats = self.img_model(imgs).mean((2, 3))
-        if single:
+        if norm:
             return self.norm_layer(img_feats)
         return img_feats
 
@@ -75,8 +75,7 @@ class CombineModel(nn.Module):
     def compose_img_text_features(self, img_feats, text_feats, comp_mode=True):
         if comp_mode:
             return self.norm_layer(self.comp_model(img_feats, text_feats))
-        else:
-            return self.norm_layer(self.outfit_model(img_feats, text_feats))
+        return self.norm_layer(self.outfit_model(img_feats, text_feats))
 
     def compose_img_text(self, imgs, texts, text_lengths, comp_mode=True):
         img_feats = self.extract_img_feature(imgs, comp_mode)
@@ -94,10 +93,8 @@ class CombineModel(nn.Module):
         outfit_imgs_target,
     ):
         source_img_feat = self.extract_img_feature(imgs_query)
-        comp_target_img_feat = self.extract_img_feature(comp_imgs_target, single=True)
-        outfit_target_img_feat = self.extract_img_feature(
-            outfit_imgs_target, single=True
-        )
+        comp_target_img_feat = self.extract_img_feature(comp_imgs_target, norm=True)
+        outfit_target_img_feat = self.extract_img_feature(outfit_imgs_target, norm=True)
         comp_text_feat = self.extract_text_feature(comp_text, comp_text_lengths)
         outfit_text_feat = self.extract_text_feature(outfit_text, outfit_text_lengths)
         comp_feat = self.compose_img_text_features(
@@ -131,13 +128,13 @@ class CombineProjModel(CombineModel):
             self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
 
-    def extract_img_feature(self, imgs, single=False, comp_mode=True):
+    def extract_img_feature(self, imgs, norm=False, comp_mode=True):
         img_feats = self.img_model(imgs).mean((2, 3))
         if comp_mode:
             img_feats = self.comp_proj(img_feats)
         else:
             img_feats = self.outfit_proj(img_feats)
-        if single:
+        if norm:
             return self.norm_layer(img_feats)
         return img_feats
 
@@ -153,10 +150,10 @@ class CombineProjModel(CombineModel):
     ):
         source_img_feat = self.img_model(imgs_query).mean((2, 3))
         comp_target_img_feat = self.extract_img_feature(
-            comp_imgs_target, single=True, comp_mode=True
+            comp_imgs_target, norm=True, comp_mode=True
         )
         outfit_target_img_feat = self.extract_img_feature(
-            outfit_imgs_target, single=True, comp_mode=False
+            outfit_imgs_target, norm=True, comp_mode=False
         )
         comp_text_feat = self.extract_text_feature(comp_text, comp_text_lengths)
         outfit_text_feat = self.extract_text_feature(outfit_text, outfit_text_lengths)
@@ -194,17 +191,17 @@ class MultiModel(Model):
 
 
 class MapModel(Model):
-    def extract_img_feature(self, imgs, single=False):
+    def extract_img_feature(self, imgs, norm=False):
         img_feats = self.img_model(imgs)
-        if single:
+        if norm:
             return self.norm_layer(img_feats.mean((2, 3)))
         return img_feats
 
 
 class DirectModel(Model):
-    def extract_img_feature(self, imgs, single=False):
+    def extract_img_feature(self, imgs, norm=False):
         img_feats = self.img_model(imgs)
-        if single:
+        if norm:
             return self.norm_layer(img_feats)
         return img_feats
 
@@ -258,9 +255,9 @@ class MultiScaleModel(nn.Module):
             ]
         )
 
-    def extract_img_feature(self, imgs, single=False):
+    def extract_img_feature(self, imgs, norm=False):
         img_feats = self.img_model(imgs)
-        if single:
+        if norm:
             return torch.cat(
                 [self.norm_layer(x.mean((2, 3))) for x in img_feats], dim=-1
             )
@@ -282,7 +279,7 @@ class MultiScaleModel(nn.Module):
 
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
-        img2 = self.extract_img_feature(imgs_target, single=True)
+        img2 = self.extract_img_feature(imgs_target, norm=True)
         return dict(
             bbc_loss=self.loss_func(
                 torch.cat(mod_img1, dim=-1), torch.cat(img2, dim=-1)
@@ -302,9 +299,9 @@ class ProjModel(Model):
             text_channel=self.text_model.out_channels,
         )
 
-    def extract_img_feature(self, imgs, single=False):
+    def extract_img_feature(self, imgs, norm=False):
         img_feats = self.img_proj_layer(self.img_model(imgs).mean((2, 3)))
-        if single:
+        if norm:
             return self.norm_layer(img_feats)
         return img_feats
 
@@ -318,9 +315,9 @@ class DIVA(Model):
             text_channel=self.text_model.out_channels,
         )
 
-    def extract_img_feature(self, imgs, single=False):
+    def extract_img_feature(self, imgs, norm=False):
         img_feats = self.img_model(imgs)
-        if single:
+        if norm:
             img_feats = torch.cat(
                 [
                     img_feats["discriminative"],

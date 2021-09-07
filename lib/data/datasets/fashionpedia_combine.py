@@ -13,23 +13,24 @@ class FashionPediaCombine(Dataset):
         path,
         transform=None,
         vocab="clip",
+        split="train",
         **kwargs,
     ):
         super().__init__()
         self.path = path
         self.transform = transform
         self.data = []
-        self.name = "FashionPedia.combine.train"
+        self.name = f"FashionPedia.combine.{split}"
 
-        self.comp_data = read_json(f"{path}/comp_triplets_dict_train.json")
-        self.outfit_data = read_json(f"{path}/outfit_triplets_dict_train.json")
+        self.comp_data = read_json(f"{path}/comp_triplets_dict_{split}.json")
+        self.outfit_data = read_json(f"{path}/outfit_triplets_dict_{split}.json")
 
         self.vocab = None
         if vocab != "init":
             vocab_file = f"{path}/{vocab}_vocab.npy"
             self.vocab = np_loader(vocab_file)
 
-        all_img_names = read_json(f"{path}/split_crop_train.json")
+        all_img_names = read_json(f"{path}/split_crop_{split}.json")
         all_img_id_dict = {all_img_names[x]: x for x in range(len(all_img_names))}
 
         outfit_img_ids = []

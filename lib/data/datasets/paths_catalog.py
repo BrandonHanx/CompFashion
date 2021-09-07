@@ -64,8 +64,13 @@ class DatasetCatalog:
             "split": "test",
             "cat_type": "outfit",
         },
-        "fashionpedia_combine": {
+        "fashionpedia_combine_train": {
             "path": "fashionpedia",
+            "split": "train",
+        },
+        "fashionpedia_combine_val": {
+            "path": "fashionpedia",
+            "split": "val",
         },
     }
 
@@ -88,6 +93,7 @@ class DatasetCatalog:
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(
                 path=os.path.join(data_dir, attrs["path"]),
+                split=attrs["split"],
             )
             return dict(
                 factory="FashionPediaCombine",
