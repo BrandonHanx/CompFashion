@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ["build_norm_layer", "build_loss_func", "build_attn_pool"]
+__all__ = ["build_norm_layer", "build_attn_pool"]
 
 
 class NormalizationLayer(nn.Module):
@@ -17,32 +17,6 @@ class NormalizationLayer(nn.Module):
     def forward(self, x, dim=-1):
         features = self.norm_s * x / torch.norm(x, dim=dim, keepdim=True).expand_as(x)
         return features
-
-
-class BatchBasedClassificationLoss(nn.Module):
-    @staticmethod
-    def forward(ref_features, tar_features, bmm=False):
-        batch_size = ref_features.size(0)
-        device = ref_features.device
-
-        if bmm:
-            pred = torch.bmm(ref_features, tar_features.unsqueeze(-1)).squeeze()
-        else:
-            pred = ref_features.mm(tar_features.transpose(0, 1))
-
-        labels = torch.arange(0, batch_size).long().to(device)
-        loss = F.cross_entropy(pred, labels)
-        return loss
-
-
-class KLDiv(nn.Module):
-    @staticmethod
-    def forward(pred, label):
-        return {
-            "kl_div": F.kl_div(
-                F.log_softmax(pred, -1), F.softmax(label, -1), reduction="batchmean"
-            )
-        }
 
 
 class AttentionPool2d(nn.Module):
@@ -114,26 +88,6 @@ class AttentionPool2d(nn.Module):
 
 def build_norm_layer(cfg):
     return NormalizationLayer(cfg.MODEL.NORM.SCALE, cfg.MODEL.NORM.LEARNABLE)
-
-
-def build_loss_func(cfg):
-    def build_loss_func_(loss_type):
-        if loss_type == "bbc":
-            loss_func = BatchBasedClassificationLoss()
-        elif loss_type == "kl_div":
-            loss_func = KLDiv()
-        else:
-            raise NotImplementedError
-        return loss_func
-
-    loss_types = cfg.MODEL.LOSS.split("+")
-    if len(loss_types) == 1:
-        return build_loss_func_(loss_types[0])
-
-    loss_funcs = []
-    for loss_type in loss_types:
-        loss_funcs.append(build_loss_func_(loss_type))
-    return nn.ModuleList(loss_funcs)
 
 
 def build_attn_pool(cfg):

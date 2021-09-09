@@ -37,6 +37,7 @@ _C.MODEL.TEXT_MODEL = "bigru"
 _C.MODEL.COMP_MODEL = "tirg"
 _C.MODEL.CORR_MODEL = "fd"
 _C.MODEL.LOSS = "bbc"
+_C.MODEL.BATCHMINER = "semihard"
 _C.MODEL.VOCAB = "glove"
 _C.MODEL.WEIGHT = "imagenet"
 _C.MODEL.EXCEPT_KEYS = None

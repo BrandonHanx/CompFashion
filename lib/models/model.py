@@ -4,7 +4,8 @@ import torch.nn as nn
 from .backbones import build_img_model, build_text_model
 from .composition import build_composition
 from .correction import build_correction
-from .functions import build_loss_func, build_norm_layer
+from .criteria import build_loss_func
+from .layers import build_norm_layer
 
 __all__ = ["build_model"]
 
