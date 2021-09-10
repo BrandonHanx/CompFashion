@@ -43,7 +43,7 @@ class Model(nn.Module):
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, norm=True)
-        return dict(bbc_loss=self.loss_func(mod_img1, img2))
+        return {"bbshm": self.loss_func(mod_img1, img2)}  # FIXME
 
 
 class CombineModel(nn.Module):

@@ -65,6 +65,7 @@ def build_dataset(cfg, dataset_catalog, is_train=True):
     # for training, concatenate all datasets into a single one
     if len(datasets) > 1:
         dataset = tud.ConcatDataset(datasets)
+        dataset.name = "concat"
 
     return [dataset]
 
