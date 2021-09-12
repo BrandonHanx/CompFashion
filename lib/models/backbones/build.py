@@ -1,8 +1,7 @@
-import torch.nn as nn
-
 from .bert import build_bert
 from .bigru import build_bigru
 from .diva import build_diva
+from .fc import build_fc
 from .lstm import build_lstm
 from .m_resnet import build_m_resnet
 from .resnet import build_resnet
@@ -27,8 +26,8 @@ def build_text_model(cfg):
         model = build_lstm(cfg)
     elif cfg.MODEL.TEXT_MODEL == "bert":
         model = build_bert(cfg)
-    elif cfg.MODEL.TEXT_MODEL == "none":
-        model = nn.Identity()
+    elif cfg.MODEL.TEXT_MODEL == "fc":
+        model = build_fc(cfg)
     else:
         raise NotImplementedError
     return model

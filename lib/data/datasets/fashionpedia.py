@@ -1,6 +1,7 @@
 import numpy as np
 import PIL
 import torch
+import torch.nn.functional as F
 from torch.utils.data import Dataset
 
 from lib.utils.directory import np_loader, read_json
@@ -28,8 +29,8 @@ class FashionPedia(Dataset):
         caps_file = f"{path}/{cat_type}_triplets_dict_{split}.json"
         self.data = read_json(caps_file)
 
-        self.vocab = None
-        if vocab != "init":
+        self.vocab_type = vocab
+        if vocab not in ["init", "two-hot"]:
             vocab_file = f"{path}/{vocab}_vocab.npy"
             self.vocab = np_loader(vocab_file)
 
@@ -48,12 +49,19 @@ class FashionPedia(Dataset):
         meta_info = {
             "source_img_id": self.all_img_ids[source_img_name],
             "target_img_id": self.all_img_ids[target_img_name],
-            "original_caption": self.data[idx]["captions"],
         }
         source_image = self.get_img(source_img_name)
         target_image = self.get_img(target_img_name)
-        if self.vocab is None:
+        if self.vocab_type == "init":
             text = np.array(self.data[idx]["wv"])
+        elif self.vocab_type == "two-hot":
+            candidate_onehot = F.one_hot(
+                torch.tensor(int(self.data[idx]["candidate_cls"])), num_classes=27
+            )
+            target_onehot = F.one_hot(
+                torch.tensor(int(self.data[idx]["target_cls"])), num_classes=27
+            )
+            text = torch.cat([candidate_onehot, target_onehot])
         else:
             text = self.vocab[self.data[idx]["wv"]]
 
