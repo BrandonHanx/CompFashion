@@ -3,8 +3,8 @@ import torchvision.transforms as T
 
 from lib.utils.comm import get_world_size
 
+from . import collate_batch as CF
 from . import datasets as D
-from .collate_batch import collate_fn, quintuple_collate_fn
 from .datasets import DatasetCatalog
 
 
@@ -112,6 +112,14 @@ def build_data_loader(cfg, is_train=True, is_distributed=False):
 
     data_loaders = []
     for dataset in datasets:
+        if "combine" in dataset.name:  # FIXEME: need refactor
+            specific_collate_fn = CF.quintuple_collate_fn
+        elif cfg.MODEL.VOCAB == "init":
+            specific_collate_fn = CF.init_collate_fn
+        elif cfg.MODEL.VOCAB == "two-hot":
+            specific_collate_fn = CF.twohot_collate_fn
+        else:
+            specific_collate_fn = CF.collate_fn
         sampler = build_data_sampler(dataset, shuffle, is_distributed)
         batch_sampler = build_batch_data_sampler(sampler, images_per_gpu, is_train)
         num_workers = cfg.DATALOADER.NUM_WORKERS
@@ -119,9 +127,7 @@ def build_data_loader(cfg, is_train=True, is_distributed=False):
             dataset,
             num_workers=num_workers,
             batch_sampler=batch_sampler,
-            collate_fn=quintuple_collate_fn
-            if "combine" in dataset.name
-            else collate_fn,
+            collate_fn=specific_collate_fn,
         )
         data_loaders.append(data_loader)
     if is_train:

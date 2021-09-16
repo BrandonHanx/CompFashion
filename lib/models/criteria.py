@@ -23,7 +23,7 @@ class BatchBasedClassificationLoss(nn.Module):
 
 
 class DistanceAdaptedBatchBasedClassificationLoss(nn.Module):
-    def __init__(self, bidirectional=True):
+    def __init__(self, bidirectional=False):
         super().__init__()
         self.bidirectional = bidirectional
         self.lower_cutoff = 0.5

@@ -15,6 +15,7 @@ INPUT:
   WIDTH: 224
 DATASETS:
   TRAIN: ("fashionpedia_comp_train",)
+#   TEST: ("fashioniq_dress_val", "fashioniq_shirt_val", "fashioniq_toptee_val")
   TEST: ("fashionpedia_comp_val",)
 SOLVER:
   IMS_PER_BATCH: 128

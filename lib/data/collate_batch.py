@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-MAX_TEXT_WORDS = 45
+MAX_TEXT_WORDS = 60
 
 
 def pad_text(text_feature):
@@ -34,6 +34,29 @@ def collate_fn(batch):
     return {
         "text": torch.FloatTensor(text),
         "text_lengths": torch.LongTensor(text_lengths),
+        "source_images": torch.stack(source),
+        "target_images": torch.stack(target),
+        "meta_info": meta_info,
+    }
+
+
+def twohot_collate_fn(batch):
+    text, source, target, meta_info = zip(*batch)
+
+    source_img_ids, target_image_ids, original_captions = [], [], []
+    for info in meta_info:
+        source_img_ids.append(info["source_img_id"])
+        target_image_ids.append(info["target_img_id"])
+        original_captions.append(info["original_caption"])
+    meta_info = dict(
+        source_img_ids=source_img_ids,
+        target_image_ids=target_image_ids,
+        original_captions=original_captions,
+    )
+
+    return {
+        "text": torch.stack(text).float(),
+        "text_lengths": torch.tensor(54),
         "source_images": torch.stack(source),
         "target_images": torch.stack(target),
         "meta_info": meta_info,

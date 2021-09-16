@@ -11,6 +11,7 @@ class FC(nn.Module):
             nn.ReLU(),
             nn.Linear(int(out_dim / 2), out_dim),
         )
+        self.out_channels = out_dim
 
     def forward(self, text, text_length):
         return self.model(text)

@@ -49,6 +49,7 @@ class FashionPedia(Dataset):
         meta_info = {
             "source_img_id": self.all_img_ids[source_img_name],
             "target_img_id": self.all_img_ids[target_img_name],
+            "original_caption": " ".join(self.data[idx]["captions"]).lower(),
         }
         source_image = self.get_img(source_img_name)
         target_image = self.get_img(target_img_name)
