@@ -201,9 +201,9 @@ class AutoCombineProjModel(CombineProjModel):
 
     def soft_selection(self, img_feats, text_feats, weights):
         weights = F.softmax(weights, -1)
-        return weights[:, 0] * self.compose_img_text_features(
+        return weights[:, 0].unsqueeze(-1) * self.compose_img_text_features(
             img_feats[0], text_feats, comp_mode=True
-        ) + weights[:, 1] * self.compose_img_text_features(
+        ) + weights[:, 1].unsqueeze(-1) * self.compose_img_text_features(
             img_feats[1], text_feats, comp_mode=False
         )
 
@@ -227,9 +227,11 @@ class AutoCombineProjModel(CombineProjModel):
         comp_weights = self.branch_classifier(comp_text_feat)
         outfit_weights = self.branch_classifier(outfit_text_feat)
 
-        comp_feat = self.soft_selection(source_img_feat, comp_text_feat, comp_weights)
+        comp_feat = self.soft_selection(
+            source_img_feat, comp_text_feat, comp_weights.detach()
+        )
         outfit_feat = self.soft_selection(
-            source_img_feat, outfit_text_feat, outfit_weights
+            source_img_feat, outfit_text_feat, outfit_weights.detach()
         )
 
         comp_loss = self.loss_func(comp_feat, comp_target_img_feat)
