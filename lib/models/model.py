@@ -197,9 +197,9 @@ class AutoCombineProjModel(CombineProjModel):
         text_feats = self.extract_text_feature(texts, text_lengths)
         weights = self.branch_classifier(text_feats)
         img_feats = self.extract_img_feature(imgs, norm=False)
-        return self.soft_selection(img_feats, text_feats, weights)
+        return self.selection(img_feats, text_feats, weights)
 
-    def soft_selection(self, img_feats, text_feats, weights):
+    def selection(self, img_feats, text_feats, weights):
         weights = F.softmax(weights, -1)
         return weights[:, 0] * self.compose_img_text_features(
             img_feats[0], text_feats, comp_mode=True
@@ -227,9 +227,78 @@ class AutoCombineProjModel(CombineProjModel):
         comp_weights = self.branch_classifier(comp_text_feat)
         outfit_weights = self.branch_classifier(outfit_text_feat)
 
-        comp_feat = self.soft_selection(source_img_feat, comp_text_feat, comp_weights)
-        outfit_feat = self.soft_selection(
-            source_img_feat, outfit_text_feat, outfit_weights
+        comp_feat = self.selection(source_img_feat, comp_text_feat, comp_weights)
+        outfit_feat = self.selection(source_img_feat, outfit_text_feat, outfit_weights)
+
+        comp_loss = self.loss_func(comp_feat, comp_target_img_feat)
+        outfit_loss = self.loss_func(outfit_feat, outfit_target_img_feat)
+        weights_loss = F.cross_entropy(
+            comp_weights, torch.zeros_like(comp_weights[:, 0]).long()
+        ) + F.cross_entropy(outfit_weights, torch.ones_like(comp_weights[:, 0]).long())
+        return dict(
+            comp_loss=comp_loss, outfit_loss=outfit_loss, weights_loss=weights_loss
+        )
+
+
+class HardCombineProjModel(CombineProjModel):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        classifier_dim = self.text_model.out_channels
+        self.branch_classifier = nn.Sequential(
+            nn.Linear(classifier_dim, int(classifier_dim // 2)),
+            nn.ReLU(),
+            nn.Linear(int(classifier_dim // 2), 2),
+        )
+
+    def extract_img_feature(self, imgs, norm=False, comp_mode=True):
+        img_feats = self.img_model(imgs).mean((2, 3))
+        if norm:
+            if comp_mode:
+                return self.norm_layer(self.comp_proj(img_feats))
+            return self.norm_layer(self.outfit_proj(img_feats))
+        return self.comp_proj(img_feats), self.outfit_proj(img_feats)
+
+    def compose_img_text(self, imgs, texts, text_lengths, comp_mode=True):
+        text_feats = self.extract_text_feature(texts, text_lengths)
+        img_feats = self.extract_img_feature(imgs, norm=False)  # tuple
+        return self.selection(img_feats, text_feats)
+
+    def selection(self, img_feats, text_feats):
+        weights = self.branch_classifier(text_feats)
+        weights = (F.softmax(weights, -1) > 0.5).float()  # threshold for hare selection
+        return weights[:, 0] * self.compose_img_text_features(
+            img_feats[0], text_feats, comp_mode=True
+        ) + weights[:, 1] * self.compose_img_text_features(
+            img_feats[1], text_feats, comp_mode=False
+        )
+
+    def compute_loss(
+        self,
+        imgs_query,
+        comp_text,
+        comp_text_lengths,
+        comp_imgs_target,
+        outfit_text,
+        outfit_text_lengths,
+        outfit_imgs_target,
+    ):
+        comp_proj_feat, outfit_proj_feat = self.extract_img_feature(
+            imgs_query, norm=False
+        )  # tuple
+        comp_target_img_feat = self.extract_img_feature(comp_imgs_target, norm=True)
+        outfit_target_img_feat = self.extract_img_feature(outfit_imgs_target, norm=True)
+
+        comp_text_feat = self.extract_text_feature(comp_text, comp_text_lengths)
+        outfit_text_feat = self.extract_text_feature(outfit_text, outfit_text_lengths)
+
+        comp_weights = self.branch_classifier(comp_text_feat)
+        outfit_weights = self.branch_classifier(outfit_text_feat)
+
+        comp_feat = self.compose_img_text_features(
+            comp_proj_feat, comp_text_feat, comp_mode=True
+        )
+        outfit_feat = self.compose_img_text_features(
+            outfit_proj_feat, outfit_text_feat, comp_mode=False
         )
 
         comp_loss = self.loss_func(comp_feat, comp_target_img_feat)
@@ -441,6 +510,8 @@ def build_model(cfg):
         model = CombineProjModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "auto-combine-proj":
         model = AutoCombineProjModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "hard-combine-proj":
+        model = HardCombineProjModel(cfg)
     else:
         raise NotImplementedError
     return model
