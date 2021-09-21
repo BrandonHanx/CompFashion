@@ -1,6 +1,4 @@
-from .bert import build_bert
 from .bigru import build_bigru
-from .diva import build_diva
 from .fc import build_fc
 from .lstm import build_lstm
 from .m_resnet import build_m_resnet
@@ -12,8 +10,8 @@ def build_img_model(cfg):
         model = build_resnet(cfg)
     elif cfg.MODEL.IMG_MODEL in ["m_resnet50", "m_resnet101"]:
         model = build_m_resnet(cfg)
-    elif cfg.MODEL.IMG_MODEL == "diva":
-        model = build_diva(cfg)
+    #     elif cfg.MODEL.IMG_MODEL == "diva":
+    #         model = build_diva(cfg)
     else:
         raise NotImplementedError
     return model
@@ -24,8 +22,8 @@ def build_text_model(cfg):
         model = build_bigru(cfg)
     elif cfg.MODEL.TEXT_MODEL == "lstm":
         model = build_lstm(cfg)
-    elif cfg.MODEL.TEXT_MODEL == "bert":
-        model = build_bert(cfg)
+    #     elif cfg.MODEL.TEXT_MODEL == "bert":
+    #         model = build_bert(cfg)
     elif cfg.MODEL.TEXT_MODEL == "fc":
         model = build_fc(cfg)
     else:
