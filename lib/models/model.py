@@ -266,9 +266,9 @@ class HardCombineProjModel(CombineProjModel):
     def selection(self, img_feats, text_feats):
         weights = self.branch_classifier(text_feats).detach()
         weights = (F.softmax(weights, -1) > 0.5).float()  # threshold for hard selection
-        return weights[:, 0] * self.compose_img_text_features(
+        return weights[:, 0].unsqueeze(-1) * self.compose_img_text_features(
             img_feats[0], text_feats, comp_mode=True
-        ) + weights[:, 1] * self.compose_img_text_features(
+        ) + weights[:, 1].unsqueeze(-1) * self.compose_img_text_features(
             img_feats[1], text_feats, comp_mode=False
         )
 
@@ -285,8 +285,12 @@ class HardCombineProjModel(CombineProjModel):
         comp_proj_feat, outfit_proj_feat = self.extract_img_feature(
             imgs_query, norm=False
         )  # tuple
-        comp_target_img_feat = self.extract_img_feature(comp_imgs_target, norm=True)
-        outfit_target_img_feat = self.extract_img_feature(outfit_imgs_target, norm=True)
+        comp_target_img_feat = self.extract_img_feature(
+            comp_imgs_target, norm=True, comp_mode=True
+        )
+        outfit_target_img_feat = self.extract_img_feature(
+            outfit_imgs_target, norm=True, comp_mode=False
+        )
 
         comp_text_feat = self.extract_text_feature(comp_text, comp_text_lengths)
         outfit_text_feat = self.extract_text_feature(outfit_text, outfit_text_lengths)
