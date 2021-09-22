@@ -174,7 +174,7 @@ def do_train(
             else:
                 topk = []
                 for loader in data_loader_val:
-                    topk.extend(inference(model, loader, save_data=False))
+                    topk.extend(inference(model, loader))
                 topk = sum(topk) / len(topk)
                 meters.update(topk=topk)
                 if topk > best_topk:

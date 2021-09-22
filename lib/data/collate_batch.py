@@ -40,6 +40,34 @@ def collate_fn(batch):
     }
 
 
+def multiturn_collate_fn(batch):
+    text_features, source, target, meta_info = zip(*batch)
+    texts, text_lengths = [], []
+    for text_feature in text_features:
+        text, text_length = pad_text(text_feature)
+        texts.append(text)
+        text_lengths.append(text_length)
+
+    source_img_ids, target_image_ids, original_captions = [], [], []
+    for info in meta_info:
+        source_img_ids.append(info["source_img_id"])
+        target_image_ids.append(info["target_img_id"])
+        original_captions.append(info["original_caption"])
+    meta_info = dict(
+        source_img_ids=source_img_ids,
+        target_image_ids=target_image_ids,
+        original_captions=original_captions,
+    )
+
+    return {
+        "text": [torch.FloatTensor(text) for text in texts],
+        "text_lengths": [torch.LongTensor(text_length) for text_length in text_lengths],
+        "source_images": torch.stack(source),
+        "target_images": torch.stack(target),
+        "meta_info": meta_info,
+    }
+
+
 def twohot_collate_fn(batch):
     text, source, target, meta_info = zip(*batch)
 

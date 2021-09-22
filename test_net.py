@@ -94,19 +94,13 @@ def main():
     data_loaders_val = build_data_loader(
         cfg, is_train=False, is_distributed=distributed
     )
-    for output_folder, dataset_name, data_loader_val in zip(
-        output_folders, dataset_names, data_loaders_val
-    ):
+    for data_loader_val in data_loaders_val:
         logger.info("Using {} GPUs".format(num_gpus))
 
         inference(
             model,
             data_loader_val,
             device=device,
-            output_folder=output_folder,
-            save_data=args.save_data,
-            rerank=args.rerank,
-            gen_mode=cfg.TEST.GEN_TEST_MODE,
         )
         synchronize()
 

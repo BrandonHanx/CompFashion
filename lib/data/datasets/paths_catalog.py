@@ -72,43 +72,80 @@ class DatasetCatalog:
             "path": "fashionpedia",
             "split": "val",
         },
+        "fashionpedia_comp_val_turn3": {
+            "path": "fashionpedia",
+            "split": "val",
+            "cat_type": "comp",
+            "turn": 3,
+        },
+        "fashionpedia_comp_test_turn3": {
+            "path": "fashionpedia",
+            "split": "test",
+            "cat_type": "comp",
+            "turn": 3,
+        },
+        "fashionpedia_comp_val_turn5": {
+            "path": "fashionpedia",
+            "split": "val",
+            "cat_type": "comp",
+            "turn": 5,
+        },
+        "fashionpedia_comp_test_turn5": {
+            "path": "fashionpedia",
+            "split": "test",
+            "cat_type": "comp",
+            "turn": 5,
+        },
+        "fashionpedia_hybrid_val_turn3": {
+            "path": "fashionpedia",
+            "split": "val",
+            "cat_type": "hybrid",
+            "turn": 3,
+        },
+        "fashionpedia_hybrid_test_turn3": {
+            "path": "fashionpedia",
+            "split": "test",
+            "cat_type": "hybrid",
+            "turn": 3,
+        },
+        "fashionpedia_hybrid_val_turn5": {
+            "path": "fashionpedia",
+            "split": "val",
+            "cat_type": "hybrid",
+            "turn": 5,
+        },
+        "fashionpedia_hybrid_test_turn5": {
+            "path": "fashionpedia",
+            "split": "test",
+            "cat_type": "hybrid",
+            "turn": 5,
+        },
     }
+
+    @staticmethod
+    def get_attrs(name):
+        data_dir = DatasetCatalog.DATA_DIR
+        attrs = DatasetCatalog.DATASETS[name]
+        attrs["path"] = os.path.join(data_dir, attrs["path"])
+        return attrs
 
     @staticmethod
     def get(name):
         if "fashioniq" in name:
-            data_dir = DatasetCatalog.DATA_DIR
-            attrs = DatasetCatalog.DATASETS[name]
-            args = dict(
-                path=os.path.join(data_dir, attrs["path"]),
-                split=attrs["split"],
-                cat_type=attrs["cat_type"],
-            )
             return dict(
                 factory="FashionIQ",
-                args=args,
+                args=getattr(name),
             )
         if "fashionpedia_combine" in name:
-            data_dir = DatasetCatalog.DATA_DIR
-            attrs = DatasetCatalog.DATASETS[name]
-            args = dict(
-                path=os.path.join(data_dir, attrs["path"]),
-                split=attrs["split"],
-            )
             return dict(
                 factory="FashionPediaCombine",
-                args=args,
+                args=getattr(name),
             )
         if "fashionpedia" in name:
-            data_dir = DatasetCatalog.DATA_DIR
-            attrs = DatasetCatalog.DATASETS[name]
-            args = dict(
-                path=os.path.join(data_dir, attrs["path"]),
-                split=attrs["split"],
-                cat_type=attrs["cat_type"],
-            )
             return dict(
                 factory="FashionPedia",
-                args=args,
+                args=getattr(name),
             )
+        if "turn" in name:
+            return dict(factory="FashionPediaMultiTurn", args=getattr(name))
         raise RuntimeError("Dataset not available: {}".format(name))

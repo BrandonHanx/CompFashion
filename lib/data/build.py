@@ -114,6 +114,8 @@ def build_data_loader(cfg, is_train=True, is_distributed=False):
     for dataset in datasets:
         if "combine" in dataset.name:  # FIXEME: need refactor
             specific_collate_fn = CF.quintuple_collate_fn
+        elif "turn" in dataset.name:
+            specific_collate_fn = CF.multiturn_collate_fn
         elif cfg.MODEL.VOCAB == "init":
             specific_collate_fn = CF.init_collate_fn
         elif cfg.MODEL.VOCAB == "two-hot":

@@ -1,5 +1,4 @@
 import logging
-import os
 
 import numpy as np
 import torch
@@ -71,50 +70,18 @@ def k_reciprocal(q_feats, g_feats, neighbor_num=10, alpha=0.3):
 
 def evaluation(
     predictions,
-    output_folder,
     topk,
-    save_data=False,
-    rerank=False,
 ):
     logger = logging.getLogger("CompFashion.inference")
-    data_dir = os.path.join(output_folder, "inference_data.npz")
 
-    if predictions is None:
-        inference_data = np.load(data_dir)
-        logger.info("Load inference data from {}".format(data_dir))
-        g_ids = torch.tensor(inference_data["g_ids"])
-        q_ids = torch.tensor(inference_data["q_ids"])
-        g_feats = torch.tensor(inference_data["g_feats"])
-        q_feats = torch.tensor(inference_data["q_feats"])
-        similarity = torch.tensor(inference_data["similarity"])
-    else:
-        g_ids = torch.tensor(predictions["gallery_ids"])
-        q_ids = torch.tensor(predictions["query_ids"])
-        g_feats = torch.cat(predictions["gallery_feats"], dim=0)
-        q_feats = torch.cat(predictions["query_feats"], dim=0)
+    g_ids = predictions["gallery_ids"]
+    q_ids = predictions["query_ids"]
+    similarity = predictions["similarity"]
 
-    similarity = torch.matmul(q_feats, g_feats.t())
     cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
     results = cmc.t().cpu().numpy()
 
     for k, result in zip(topk, results):
         logger.info("R@{}: {}".format(k, result))
-
-    if rerank:  # FIXME: don't support multi-scale
-        similarity = k_reciprocal(q_feats, g_feats)
-        cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
-        results = cmc.t().cpu().numpy()
-        for k, result in zip(topk, results):
-            logger.info("Rerank R@{}: {}".format(k, result))
-
-    if save_data and predictions is not None:
-        np.savez(
-            data_dir,
-            g_ids=g_ids.cpu().numpy(),
-            q_ids=q_ids.cpu().numpy(),
-            similarity=similarity.cpu().numpy(),
-            g_feats=g_feats.cpu().numpy(),
-            q_feats=q_feats.cpu().numpy(),
-        )
 
     return cmc[2:]

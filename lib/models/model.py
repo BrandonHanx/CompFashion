@@ -258,19 +258,24 @@ class HardCombineProjModel(CombineProjModel):
             return self.norm_layer(self.outfit_proj(img_feats))
         return self.comp_proj(img_feats), self.outfit_proj(img_feats)
 
-    def compose_img_text(self, imgs, texts, text_lengths, comp_mode=True):
+    def compose_img_text(
+        self, imgs, texts, text_lengths, comp_mode=True, return_weights=False
+    ):
         text_feats = self.extract_text_feature(texts, text_lengths)
         img_feats = self.extract_img_feature(imgs, norm=False)  # tuple
-        return self.selection(img_feats, text_feats)
+        return self.selection(img_feats, text_feats, return_weights)
 
-    def selection(self, img_feats, text_feats):
+    def selection(self, img_feats, text_feats, return_weights):
         weights = self.branch_classifier(text_feats).detach()
         weights = (F.softmax(weights, -1) > 0.5).float()  # threshold for hard selection
-        return weights[:, 0].unsqueeze(-1) * self.compose_img_text_features(
+        selected_feats = weights[:, 0].unsqueeze(-1) * self.compose_img_text_features(
             img_feats[0], text_feats, comp_mode=True
         ) + weights[:, 1].unsqueeze(-1) * self.compose_img_text_features(
             img_feats[1], text_feats, comp_mode=False
         )
+        if return_weights:
+            return selected_feats, weights
+        return selected_feats
 
     def compute_loss(
         self,
