@@ -47,7 +47,7 @@ def compute_on_dataset(model, data_loader, device):
 
 def compute_on_dataset_multiturn(model, data_loader, device):
     model.eval()
-    query_feats, query_ids, weights = [], [], []
+    query_feats, query_ids, task_weights = [], [], []
     gallery_comp_feats, gallery_outfit_feats = [], []
 
     for imgs in tqdm(
@@ -61,8 +61,8 @@ def compute_on_dataset_multiturn(model, data_loader, device):
             gallery_outfit_feats.append(
                 model.extract_img_feature(imgs, norm=True, comp_mode=False)
             )
-    gallery_comp_feats = torch.stack(gallery_comp_feats)
-    gallery_outfit_feats = torch.stack(gallery_outfit_feats)
+    gallery_comp_feats = torch.cat(gallery_comp_feats, dim=0)
+    gallery_outfit_feats = torch.cat(gallery_outfit_feats, dim=0)
 
     for batch_data in tqdm(data_loader):
         imgs = batch_data["source_images"].to(device)
@@ -73,25 +73,27 @@ def compute_on_dataset_multiturn(model, data_loader, device):
             text = text.to(device)
             text_length = text_length.to(device)
             with torch.no_grad():
-                query_feat, weights = model.compose_img_text(imgs, text, text_length)
+                query_feat, weights = model.compose_img_text(
+                    imgs, text, text_length, return_weights=True
+                )
                 # Greedy search
                 max_comp_idx = torch.argmax(query_feat @ gallery_comp_feats.t(), dim=1)
                 max_outfit_idx = torch.argmax(
                     query_feat @ gallery_outfit_feats.t(), dim=1
                 )
                 max_idx = weights[:, 0] * max_comp_idx + weights[:, 1] * max_outfit_idx
-                imgs = data_loader.dataset.get_imgs_via_ids(max_idx.long())
+                imgs = data_loader.dataset.get_imgs_via_ids(max_idx.long()).to(device)
 
         query_feats.append(query_feat)
-        weights.append(weights)
+        task_weights.append(weights)
 
     query_feats = torch.cat(query_feats, dim=0)
-    weights = torch.cat(weights, dim=0)
+    task_weights = torch.cat(task_weights, dim=0)
     comp_similarity = query_feats @ gallery_comp_feats.t()
     outfit_similarity = query_feats @ gallery_outfit_feats.t()
     similarity = (
-        weights[:, 0].unsqueeze(-1) * comp_similarity
-        + weights[:, 1].unsqueeze(-1) * outfit_similarity
+        task_weights[:, 0].unsqueeze(-1) * comp_similarity
+        + task_weights[:, 1].unsqueeze(-1) * outfit_similarity
     )
 
     results_dict = dict(

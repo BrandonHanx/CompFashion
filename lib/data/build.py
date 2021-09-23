@@ -51,7 +51,7 @@ def build_dataset(cfg, dataset_catalog, is_train=True):
         args["vocab"] = cfg.MODEL.VOCAB
         if "fashioniq" in dataset_name:
             args["crop"] = cfg.DATASETS.CROP
-        if "fashionpedia" in dataset_name:
+        if "fashionpedia" in dataset_name and "turn" not in dataset_name:
             args["sub_cats"] = cfg.DATASETS.SUB_CATS
 
         # make dataset from factory

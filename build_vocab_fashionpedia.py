@@ -3,6 +3,7 @@ from collections import Counter
 from glob import glob
 
 import nltk
+from tqdm import tqdm
 
 from lib.utils.directory import read_json, write_json
 
@@ -55,9 +56,33 @@ for cap_file in cap_files:
     sn = "_".join(sn[:2] + ["dict"] + sn[2:])
     save_file = os.path.join(os.path.dirname(cap_file), sn)
     # Process
-    for data in cap_data:
+    for data in tqdm(cap_data):
         captions = data["captions"]
         data["wv"] = (
             get_tokens(captions[0]) + [vocab["<LINK>"]] + get_tokens(captions[1])
         )
     write_json(cap_data, save_file)
+
+
+# # Build vocab
+# cap_files = glob("train_data/fashionpedia/*turn?.json")
+# vocab = read_json("train_data/fashionpedia/vocab.json")
+
+# # Build cap file
+# for cap_file in cap_files:
+#     print(cap_file)
+#     # Load data
+#     cap_data = read_json(cap_file)
+#     # Save name
+#     sn = os.path.basename(cap_file).split("_")
+#     sn = "_".join(sn[:2] + ["dict"] + sn[2:])
+#     save_file = os.path.join(os.path.dirname(cap_file), sn)
+#     # Process
+#     for data in tqdm(cap_data):
+#         captions = data["captions"]
+#         data["wv"] = []
+#         for caption in captions:
+#             data["wv"].append(
+#                 get_tokens(caption[0]) + [vocab["<LINK>"]] + get_tokens(caption[1])
+#             )
+#     write_json(cap_data, save_file)

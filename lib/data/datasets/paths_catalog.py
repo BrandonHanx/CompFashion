@@ -123,29 +123,28 @@ class DatasetCatalog:
     }
 
     @staticmethod
-    def get_attrs(name):
-        data_dir = DatasetCatalog.DATA_DIR
-        attrs = DatasetCatalog.DATASETS[name]
-        attrs["path"] = os.path.join(data_dir, attrs["path"])
-        return attrs
-
-    @staticmethod
     def get(name):
+        def get_attrs(name):
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            attrs["path"] = os.path.join(data_dir, attrs["path"])
+            return attrs
+
         if "fashioniq" in name:
             return dict(
                 factory="FashionIQ",
-                args=getattr(name),
+                args=get_attrs(name),
             )
         if "fashionpedia_combine" in name:
             return dict(
                 factory="FashionPediaCombine",
-                args=getattr(name),
+                args=get_attrs(name),
             )
         if "fashionpedia" in name:
+            if "turn" in name:
+                return dict(factory="FashionPediaMultiTurn", args=get_attrs(name))
             return dict(
                 factory="FashionPedia",
-                args=getattr(name),
+                args=get_attrs(name),
             )
-        if "turn" in name:
-            return dict(factory="FashionPediaMultiTurn", args=getattr(name))
         raise RuntimeError("Dataset not available: {}".format(name))

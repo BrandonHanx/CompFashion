@@ -41,7 +41,7 @@ def collate_fn(batch):
 
 
 def multiturn_collate_fn(batch):
-    text_features, source, target, meta_info = zip(*batch)
+    source, target, meta_info, *text_features = zip(*batch)
     texts, text_lengths = [], []
     for text_feature in text_features:
         text, text_length = pad_text(text_feature)

@@ -17,6 +17,7 @@ class FashionPediaMultiTurn(FashionPedia):
         turn=3,
     ):
         super().__init__(path, split, cat_type, transform, vocab)
+        self.name = f"FashionPedia.{cat_type}.dict.{split}.turn{turn}"
         caps_file = f"{path}/{cat_type}_triplets_dict_{split}_turn{turn}.json"
         self.data = read_json(caps_file)
 
@@ -37,7 +38,7 @@ class FashionPediaMultiTurn(FashionPedia):
         else:
             text = [self.vocab[x] for x in self.data[idx]["wv"]]
 
-        return text, source_image, target_image, meta_info
+        return source_image, target_image, meta_info, *text
 
     def get_imgs_via_ids(self, img_ids):
         imgs = []
