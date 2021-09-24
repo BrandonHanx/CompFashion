@@ -262,7 +262,10 @@ class HardCombineProjModel(CombineProjModel):
         self, imgs, texts, text_lengths, comp_mode=True, return_weights=False
     ):
         text_feats = self.extract_text_feature(texts, text_lengths)
-        img_feats = self.extract_img_feature(imgs, norm=False)  # tuple
+        if isinstance(imgs, tuple):
+            img_feats = imgs
+        else:
+            img_feats = self.extract_img_feature(imgs, norm=False)  # tuple
         return self.selection(img_feats, text_feats, return_weights)
 
     def selection(self, img_feats, text_feats, return_weights):

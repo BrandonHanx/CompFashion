@@ -1,7 +1,4 @@
 import numpy as np
-import torch
-
-from lib.utils.directory import read_json
 
 from .fashionpedia import FashionPedia
 
@@ -16,10 +13,14 @@ class FashionPediaMultiTurn(FashionPedia):
         vocab="glove",
         turn=3,
     ):
+        self.turn = turn
         super().__init__(path, split, cat_type, transform, vocab)
-        self.name = f"FashionPedia.{cat_type}.dict.{split}.turn{turn}"
-        caps_file = f"{path}/{cat_type}_triplets_dict_{split}_turn{turn}.json"
-        self.data = read_json(caps_file)
+
+    def get_name(self):
+        return f"FashionPedia.{self.cat_type}.dict.{self.split}.turn{self.turn}"
+
+    def get_file_name(self):
+        return f"{self.path}/{self.cat_type}_triplets_dict_{self.split}_turn{self.turn}.json"
 
     def __getitem__(self, idx):
         source_img_name = self.data[idx]["candidate"]
@@ -38,10 +39,7 @@ class FashionPediaMultiTurn(FashionPedia):
         else:
             text = [self.vocab[x] for x in self.data[idx]["wv"]]
 
-        return source_image, target_image, meta_info, *text
+        args = [source_image, target_image, meta_info]
+        args.extend(text)
 
-    def get_imgs_via_ids(self, img_ids):
-        imgs = []
-        for img_id in img_ids:
-            imgs.append(self.get_img(self.all_img_names[img_id]))
-        return torch.stack(imgs)
+        return tuple(args)

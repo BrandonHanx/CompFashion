@@ -23,11 +23,11 @@ class FashionPedia(Dataset):
         self.path = path
         self.transform = transform
         self.split = split
+        self.cat_type = cat_type
         self.data = []
-        self.name = f"FashionPedia.{cat_type}.dict.{split}"
 
-        caps_file = f"{path}/{cat_type}_triplets_dict_{split}.json"
-        self.data = read_json(caps_file)
+        self.name = self.get_name()
+        self.data = read_json(self.get_file_name())
 
         self.vocab_type = vocab
         if vocab not in ["init", "two-hot"]:
@@ -42,6 +42,12 @@ class FashionPedia(Dataset):
         self.all_img_ids = {
             self.all_img_names[x]: x for x in range(len(self.all_img_names))
         }
+
+    def get_name(self):
+        return f"FashionPedia.{self.cat_type}.dict.{self.split}"
+
+    def get_file_name(self):
+        return f"{self.path}/{self.cat_type}_triplets_dict_{self.split}.json"
 
     def __getitem__(self, idx):
         source_img_name = self.data[idx]["candidate"]
