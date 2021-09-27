@@ -454,7 +454,7 @@ class ProjModel(Model):
             text_channel=self.text_model.out_channels,
         )
 
-    def extract_img_feature(self, imgs, norm=False):
+    def extract_img_feature(self, imgs, norm=False, comp_mode=True):
         img_feats = self.img_proj_layer(self.img_model(imgs).mean((2, 3)))
         if norm:
             return self.norm_layer(img_feats)
