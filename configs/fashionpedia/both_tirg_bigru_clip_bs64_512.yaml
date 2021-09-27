@@ -6,17 +6,19 @@ MODEL:
   VOCAB: "clip"
   GRU:
     EMBEDDING_SIZE: 512
-    NUM_UNITS: 512
+    NUM_UNITS: 256
     VOCABULARY_SIZE: 512
   COMP:
-    EMBED_DIM: 1024
-    METHOD: "hard-combine-proj"
+    EMBED_DIM: 512
+    METHOD: "proj"
 INPUT:
   HEIGHT: 224
   WIDTH: 224
 DATASETS:
-  TRAIN: ("fashionpedia_combine_train",)
+  TRAIN: ("fashionpedia_comp_train", "fashionpedia_outfit_train")
   TEST: ("fashionpedia_comp_val", "fashionpedia_outfit_val")
+#   TRAIN: ("fashionpedia_comp_val", "fashionpedia_outfit_val")
+#   TEST: ("fashionpedia_comp_test", "fashionpedia_outfit_test")
 SOLVER:
   IMS_PER_BATCH: 64
   NUM_EPOCHS: 40

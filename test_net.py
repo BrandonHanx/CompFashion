@@ -88,13 +88,11 @@ def main():
         makedir(output_folder)
         output_folders.append(output_folder)
 
-    logger = setup_logger(
-        "CompFashion", os.path.join(output_dir, "inference"), get_rank()
-    )
     data_loaders_val = build_data_loader(
         cfg, is_train=False, is_distributed=distributed
     )
-    for data_loader_val in data_loaders_val:
+    for data_loader_val, output_folder in zip(data_loaders_val, output_folders):
+        logger = setup_logger("CompFashion", output_folder, get_rank())
         logger.info("Using {} GPUs".format(num_gpus))
 
         inference(
@@ -103,6 +101,8 @@ def main():
             device=device,
         )
         synchronize()
+        logger.handlers.pop()
+        logger.handlers.pop()
 
 
 if __name__ == "__main__":
