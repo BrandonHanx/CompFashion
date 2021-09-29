@@ -404,7 +404,7 @@ class MultiScaleModel(nn.Module):
         self.comp_model = nn.ModuleList(
             [
                 build_composition(
-                    cfg=cfg, img_channel=x, text_channel=self.text_model.out_channels
+                    cfg=cfg, img_channel=x, text_channel=cfg.MODEL.COMP.EMBED_DIM
                 )
                 for x in self.img_model.out_channels
             ]
@@ -436,7 +436,7 @@ class MultiScaleModel(nn.Module):
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, norm=True)
-        return dict(bbc_loss=self.loss_func(mod_img1, torch.cat(img2, dim=-1)))
+        return dict(bbc_loss=self.loss_func(mod_img1, img2))
 
 
 class ProjModel(Model):
@@ -473,6 +473,11 @@ class ProjMapModel(Model):
         self.text_proj_layer = nn.Linear(
             self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
+        self.comp_model = build_composition(
+            cfg=cfg,
+            img_channel=self.img_model.out_channels,
+            text_channel=cfg.MODEL.COMP.EMBED_DIM,
+        )
 
     def norm_and_avgpool(self, x):
         return self.norm_layer(self.img_proj_layer(x.mean((2, 3))))
@@ -496,6 +501,8 @@ def build_model(cfg):
         model = Model(cfg)
     elif cfg.MODEL.COMP.METHOD == "proj":
         model = ProjModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "proj-map":
+        model = ProjMapModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "multi-scale":
         model = MultiScaleModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "corr":
