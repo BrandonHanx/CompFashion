@@ -410,7 +410,7 @@ class MultiScaleModel(nn.Module):
             ]
         )
 
-    def extract_img_feature(self, imgs, norm=False):
+    def extract_img_feature(self, imgs, norm=False, comp_mode=True):
         img_feats = self.img_model(imgs)
         if norm:
             return torch.cat(
@@ -424,22 +424,19 @@ class MultiScaleModel(nn.Module):
     def compose_img_text_features(self, img_feats, text_feats, i):
         return self.norm_layer(self.comp_model[i](img_feats, text_feats))
 
-    def compose_img_text(self, imgs, texts, text_lengths):
+    def compose_img_text(self, imgs, texts, text_lengths, comp_mode=True):
         img_feats = self.extract_img_feature(imgs)
         text_feats = self.extract_text_feature(texts, text_lengths)
-        return [
+        img_feats = [
             self.compose_img_text_features(x, text_feats, i)
             for i, x in enumerate(img_feats)
         ]
+        return torch.cat(img_feats, dim=-1)
 
     def compute_loss(self, imgs_query, mod_texts, text_lengths, imgs_target):
         mod_img1 = self.compose_img_text(imgs_query, mod_texts, text_lengths)
         img2 = self.extract_img_feature(imgs_target, norm=True)
-        return dict(
-            bbc_loss=self.loss_func(
-                torch.cat(mod_img1, dim=-1), torch.cat(img2, dim=-1)
-            )
-        )
+        return dict(bbc_loss=self.loss_func(mod_img1, torch.cat(img2, dim=-1)))
 
 
 class ProjModel(Model):
@@ -448,10 +445,13 @@ class ProjModel(Model):
         self.img_proj_layer = nn.Linear(
             self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
+        self.text_proj_layer = nn.Linear(
+            self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
         self.comp_model = build_composition(
             cfg=cfg,
             img_channel=cfg.MODEL.COMP.EMBED_DIM,
-            text_channel=self.text_model.out_channels,
+            text_channel=cfg.MODEL.COMP.EMBED_DIM,
         )
 
     def extract_img_feature(self, imgs, norm=False, comp_mode=True):
@@ -460,43 +460,35 @@ class ProjModel(Model):
             return self.norm_layer(img_feats)
         return img_feats
 
+    def extract_text_feature(self, texts, text_lengths):
+        return self.text_proj_layer(self.text_model(texts, text_lengths))
 
-class DIVA(Model):
+
+class ProjMapModel(Model):
     def __init__(self, cfg):
         super().__init__(cfg)
-        self.comp_model = build_composition(
-            cfg=cfg,
-            img_channel=cfg.MODEL.COMP.EMBED_DIM,
-            text_channel=self.text_model.out_channels,
+        self.img_proj_layer = nn.Linear(
+            self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
+        self.text_proj_layer = nn.Linear(
+            self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
 
-    def extract_img_feature(self, imgs, norm=False):
+    def norm_and_avgpool(self, x):
+        return self.norm_layer(self.img_proj_layer(x.mean((2, 3))))
+
+    def extract_img_feature(self, imgs, norm=False, comp_mode=True):
         img_feats = self.img_model(imgs)
         if norm:
-            img_feats = torch.cat(
-                [
-                    img_feats["discriminative"],
-                    img_feats["selfsimilarity"],
-                    img_feats["shared"],
-                    img_feats["intra"],
-                ],
-                dim=1,
-            )
-            return self.norm_layer(img_feats)
+            return self.norm_and_avgpool(img_feats)
         return img_feats
 
+    def extract_text_feature(self, texts, text_lengths):
+        return self.text_proj_layer(self.text_model(texts, text_lengths))
+
     def compose_img_text_features(self, img_feats, text_feats):
-        return self.norm_layer(
-            torch.cat(
-                [
-                    self.comp_model(img_feats["discriminative"], text_feats),
-                    self.comp_model(img_feats["selfsimilarity"], text_feats),
-                    self.comp_model(img_feats["shared"], text_feats),
-                    self.comp_model(img_feats["intra"], text_feats),
-                ],
-                dim=1,
-            )
-        )
+        comp_feats = self.comp_model(img_feats, text_feats)
+        return self.norm_and_avgpool(comp_feats)
 
 
 def build_model(cfg):
@@ -514,8 +506,6 @@ def build_model(cfg):
         model = DirectModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "multi":
         model = MultiModel(cfg)
-    elif cfg.MODEL.COMP.METHOD == "diva":
-        model = DIVA(cfg)
     elif cfg.MODEL.COMP.METHOD == "combine":
         model = CombineModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "combine-proj":

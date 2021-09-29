@@ -1,16 +1,16 @@
 MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
-  COMP_MODEL: "cosmo"
+  COMP_MODEL: "val"
   LOSS: "bbc"
   VOCAB: "glove"
   GRU:
     EMBEDDING_SIZE: 512
     NUM_UNITS: 1024
-    VOCABULARY_SIZE: 300
+    VOCABULARY_SIZE: 512
   COMP:
-    METHOD: "proj-map"
     EMBED_DIM: 512
+    METHOD: "multi-scale"
 INPUT:
   HEIGHT: 224
   WIDTH: 224

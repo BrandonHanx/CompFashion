@@ -1,16 +1,16 @@
 MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
-  COMP_MODEL: "cosmo"
+  COMP_MODEL: "rtic"
   LOSS: "bbc"
-  VOCAB: "glove"
+  VOCAB: "clip"
   GRU:
     EMBEDDING_SIZE: 512
     NUM_UNITS: 1024
-    VOCABULARY_SIZE: 300
+    VOCABULARY_SIZE: 512
   COMP:
-    METHOD: "proj-map"
     EMBED_DIM: 512
+    METHOD: "proj"
 INPUT:
   HEIGHT: 224
   WIDTH: 224
@@ -26,6 +26,6 @@ SOLVER:
   CHECKPOINT_PERIOD: 40
   LRSCHEDULER: 'step'
   STEPS: (30, 50)
-  WARMUP_EPOCHS: 0
+  WARMUP_EPOCHS: 5
 TEST:
   IMS_PER_BATCH: 64

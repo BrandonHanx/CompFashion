@@ -3,11 +3,11 @@ MODEL:
   TEXT_MODEL: "bigru"
   COMP_MODEL: "cosmo"
   LOSS: "bbc"
-  VOCAB: "glove"
+  VOCAB: "clip"
   GRU:
     EMBEDDING_SIZE: 512
     NUM_UNITS: 1024
-    VOCABULARY_SIZE: 300
+    VOCABULARY_SIZE: 512
   COMP:
     METHOD: "proj-map"
     EMBED_DIM: 512
