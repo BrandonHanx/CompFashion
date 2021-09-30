@@ -120,18 +120,21 @@ class CombineProjModel(CombineModel):
         self.comp_model = build_composition(
             cfg=cfg,
             img_channel=cfg.MODEL.COMP.EMBED_DIM,
-            text_channel=self.text_model.out_channels,
+            text_channel=cfg.MODEL.COMP.EMBED_DIM,
         )
         self.outfit_model = build_composition(
             cfg=cfg,
             img_channel=cfg.MODEL.COMP.EMBED_DIM,
-            text_channel=self.text_model.out_channels,
+            text_channel=cfg.MODEL.COMP.EMBED_DIM,
         )
         self.comp_proj = nn.Linear(
             self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
         self.outfit_proj = nn.Linear(
             self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
+        )
+        self.text_proj = nn.Linear(
+            self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         )
 
     def extract_img_feature(self, imgs, norm=False, comp_mode=True):
@@ -143,6 +146,9 @@ class CombineProjModel(CombineModel):
         if norm:
             return self.norm_layer(img_feats)
         return img_feats
+
+    def extract_text_feature(self, texts, text_lengths):
+        return self.text_proj(self.text_model(texts, text_lengths))
 
     def compute_loss(
         self,
