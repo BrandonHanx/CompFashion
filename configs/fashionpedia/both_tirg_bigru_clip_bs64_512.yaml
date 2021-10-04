@@ -6,7 +6,7 @@ MODEL:
   VOCAB: "clip"
   GRU:
     EMBEDDING_SIZE: 512
-    NUM_UNITS: 256
+    NUM_UNITS: 1024
     VOCABULARY_SIZE: 512
   COMP:
     EMBED_DIM: 512
@@ -17,8 +17,6 @@ INPUT:
 DATASETS:
   TRAIN: ("fashionpedia_comp_train", "fashionpedia_outfit_train")
   TEST: ("fashionpedia_comp_val", "fashionpedia_outfit_val")
-#   TRAIN: ("fashionpedia_comp_val", "fashionpedia_outfit_val")
-#   TEST: ("fashionpedia_comp_test", "fashionpedia_outfit_test")
 SOLVER:
   IMS_PER_BATCH: 64
   NUM_EPOCHS: 40

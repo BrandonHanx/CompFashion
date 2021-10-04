@@ -49,6 +49,21 @@ class DatasetCatalog:
             "split": "test",
             "cat_type": "comp",
         },
+        "fashionpedia_comp_miner_train": {
+            "path": "fashionpedia",
+            "split": "train",
+            "cat_type": "comp_miner",
+        },
+        "fashionpedia_comp_miner_val": {
+            "path": "fashionpedia",
+            "split": "val",
+            "cat_type": "comp_miner",
+        },
+        "fashionpedia_comp_miner_test": {
+            "path": "fashionpedia",
+            "split": "test",
+            "cat_type": "comp_miner",
+        },
         "fashionpedia_outfit_train": {
             "path": "fashionpedia",
             "split": "train",
