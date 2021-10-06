@@ -180,6 +180,18 @@ class CombineProjModel(CombineModel):
         return dict(comp_loss=comp_loss, outfit_loss=outfit_loss)
 
 
+class ShareProjCombineProjModel(CombineProjModel):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.outfit_proj = self.comp_proj
+
+
+class ShareCompCombineProjModel(CombineProjModel):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.outfit_model = self.comp_model
+
+
 class AutoCombineProjModel(CombineProjModel):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -523,6 +535,10 @@ def build_model(cfg):
         model = CombineModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "combine-proj":
         model = CombineProjModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "shareproj-combine-proj":
+        model = ShareProjCombineProjModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "sharecomp-combine-proj":
+        model = ShareCompCombineProjModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "auto-combine-proj":
         model = AutoCombineProjModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "hard-combine-proj":
