@@ -16,19 +16,24 @@ def rank(similarity, q_ids, g_ids, topk=[1, 5, 10, 50], get_mAP=True):
     pred_labels = g_ids[indices]  # q * k
     matches = pred_labels.eq(q_ids.view(-1, 1))  # q * k
 
+    hit_idx = torch.argmax(matches, dim=1)
+    num_gallery = matches.shape[1]
+    percentile_rank = hit_idx / num_gallery
+    percentile_rank = 1 - percentile_rank
+
     all_cmc = matches[:, :max_rank].cumsum(1)
     all_cmc[all_cmc > 1] = 1
     all_cmc = all_cmc.float().mean(0) * 100
     all_cmc = all_cmc[topk - 1]
 
-    np.save("cmc.npy", matches.cpu().numpy())
-    np.save("similarity.npy", max_sim.cpu().numpy())
-    np.save("q_ids.npy", q_ids.cpu().numpy())
-    np.save("g_ids.npy", g_ids.cpu().numpy())
-    np.save("indices.npy", indices.cpu().numpy())
+    # np.save("cmc.npy", matches.cpu().numpy())
+    # np.save("similarity.npy", max_sim.cpu().numpy())
+    # np.save("q_ids.npy", q_ids.cpu().numpy())
+    # np.save("g_ids.npy", g_ids.cpu().numpy())
+    # np.save("indices.npy", indices.cpu().numpy())
 
     if not get_mAP:
-        return all_cmc, indices
+        return all_cmc, percentile_rank, indices
 
     num_rel = matches.sum(1)  # q
     tmp_cmc = matches.cumsum(1)  # q * k
@@ -36,7 +41,7 @@ def rank(similarity, q_ids, g_ids, topk=[1, 5, 10, 50], get_mAP=True):
     tmp_cmc = torch.stack(tmp_cmc, 1) * matches
     AP = tmp_cmc.sum(1) / num_rel  # q
     mAP = AP.mean() * 100
-    return all_cmc, mAP, indices
+    return all_cmc, percentile_rank, mAP, indices
 
 
 def jaccard(a_list, b_list):
@@ -78,10 +83,12 @@ def evaluation(
     q_ids = predictions["query_ids"]
     similarity = predictions["similarity"]
 
-    cmc, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
+    cmc, percentile_rank, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
     results = cmc.t().cpu().numpy()
 
     for k, result in zip(topk, results):
         logger.info("R@{}: {}".format(k, result))
+
+    logger.info("PR: {}".format(percentile_rank))
 
     return cmc[2:]
