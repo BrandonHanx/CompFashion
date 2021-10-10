@@ -2,6 +2,7 @@
 *.pyc
 *.ipynb
 *.npy
+*.pdf
 
 output/
 train_data/

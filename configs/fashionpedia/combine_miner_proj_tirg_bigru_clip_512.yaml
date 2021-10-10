@@ -18,7 +18,7 @@ DATASETS:
 #   TRAIN: ("fashionpedia_combine_val",)
 #   TEST: ("fashionpedia_comp_test", "fashionpedia_outfit_test")
   TRAIN: ("fashionpedia_combine_train",)
-  TEST: ("fashionpedia_comp_val", "fashionpedia_outfit_val")
+  TEST: ("fashionpedia_comp_miner_val", "fashionpedia_outfit_val")
 SOLVER:
   IMS_PER_BATCH: 64
   NUM_EPOCHS: 40

@@ -22,7 +22,7 @@ class FashionPediaCombine(Dataset):
         self.data = []
         self.name = f"FashionPedia.combine.{split}"
 
-        self.comp_data = read_json(f"{path}/comp_triplets_dict_{split}.json")
+        self.comp_data = read_json(f"{path}/comp_miner_triplets_dict_{split}.json")
         self.outfit_data = read_json(f"{path}/outfit_triplets_dict_{split}.json")
 
         self.vocab = None
