@@ -6,20 +6,13 @@ import torch
 
 def rank(similarity, q_ids, g_ids, topk=[1, 5, 10, 50], get_mAP=True):
     max_rank = max(topk)
-    if get_mAP:
-        indices = torch.argsort(similarity, dim=1, descending=True)
-    else:
-        # acclerate sort with topk
-        max_sim, indices = torch.topk(
-            similarity, k=max_rank, dim=1, largest=True, sorted=True
-        )  # q * topk
+
+    # acclerate sort with topk
+    max_sim, indices = torch.topk(
+        similarity, k=max_rank, dim=1, largest=True, sorted=True
+    )  # q * topk
     pred_labels = g_ids[indices]  # q * k
     matches = pred_labels.eq(q_ids.view(-1, 1))  # q * k
-
-    hit_idx = torch.argmax(matches, dim=1)
-    num_gallery = matches.shape[1]
-    percentile_rank = hit_idx / num_gallery
-    percentile_rank = 1 - percentile_rank
 
     all_cmc = matches[:, :max_rank].cumsum(1)
     all_cmc[all_cmc > 1] = 1
@@ -33,15 +26,16 @@ def rank(similarity, q_ids, g_ids, topk=[1, 5, 10, 50], get_mAP=True):
     # np.save("indices.npy", indices.cpu().numpy())
 
     if not get_mAP:
-        return all_cmc, percentile_rank, indices
+        return all_cmc, indices
 
     num_rel = matches.sum(1)  # q
     tmp_cmc = matches.cumsum(1)  # q * k
     tmp_cmc = [tmp_cmc[:, i] / (i + 1.0) for i in range(tmp_cmc.shape[1])]
     tmp_cmc = torch.stack(tmp_cmc, 1) * matches
     AP = tmp_cmc.sum(1) / num_rel  # q
+    AP = torch.nan_to_num(AP)
     mAP = AP.mean() * 100
-    return all_cmc, percentile_rank, mAP, indices
+    return all_cmc, mAP, indices
 
 
 def jaccard(a_list, b_list):
@@ -83,12 +77,12 @@ def evaluation(
     q_ids = predictions["query_ids"]
     similarity = predictions["similarity"]
 
-    cmc, percentile_rank, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=False)
+    cmc, mAP, _ = rank(similarity, q_ids, g_ids, topk, get_mAP=True)
     results = cmc.t().cpu().numpy()
 
     for k, result in zip(topk, results):
         logger.info("R@{}: {}".format(k, result))
 
-    logger.info("PR: {}".format(percentile_rank))
+    logger.info("mAP@50: {}".format(mAP))
 
     return cmc[2:]
