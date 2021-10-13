@@ -195,7 +195,7 @@ class ShareCompCombineProjModel(CombineProjModel):
 class AutoCombineProjModel(CombineProjModel):
     def __init__(self, cfg):
         super().__init__(cfg)
-        classifier_dim = self.text_model.out_channels
+        classifier_dim = cfg.MODEL.COMP.EMBED_DIM
         self.branch_classifier = nn.Sequential(
             nn.Linear(classifier_dim, int(classifier_dim // 2)),
             nn.ReLU(),
@@ -261,7 +261,7 @@ class AutoCombineProjModel(CombineProjModel):
 class HardCombineProjModel(CombineProjModel):
     def __init__(self, cfg):
         super().__init__(cfg)
-        classifier_dim = self.text_model.out_channels
+        classifier_dim = cfg.MODEL.COMP.EMBED_DIM
         self.branch_classifier = nn.Sequential(
             nn.Linear(classifier_dim, int(classifier_dim // 2)),
             nn.ReLU(),
