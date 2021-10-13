@@ -1,4 +1,5 @@
 from .cosmo import build_cosmo
+from .csa_net import build_csanet
 from .rtic import build_rtic
 from .tirg import build_tirg
 from .val import build_val
@@ -12,6 +13,8 @@ def build_composition(**kwargs):
         model = build_val(kwargs["text_channel"], kwargs["img_channel"])
     elif cfg.MODEL.COMP_MODEL == "rtic":
         model = build_rtic(kwargs["text_channel"], kwargs["img_channel"])
+    elif cfg.MODEL.COMP_MODEL == "csa-net":
+        model = build_csanet(kwargs["text_channel"], kwargs["img_channel"])
     elif cfg.MODEL.COMP_MODEL == "cosmo":
         model = build_cosmo(kwargs["text_channel"])
     else:
