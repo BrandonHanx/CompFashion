@@ -16,7 +16,7 @@ def build_composition(**kwargs):
     elif cfg.MODEL.COMP_MODEL == "csa-net":
         model = build_csanet(kwargs["text_channel"], kwargs["img_channel"])
     elif cfg.MODEL.COMP_MODEL == "cosmo":
-        model = build_cosmo(kwargs["text_channel"])
+        model = build_cosmo(kwargs["text_channel"], kwargs["img_channel"])
     else:
         raise NotImplementedError
     return model

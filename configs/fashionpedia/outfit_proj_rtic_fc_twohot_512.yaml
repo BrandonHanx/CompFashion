@@ -1,0 +1,27 @@
+MODEL:
+  IMG_MODEL: "resnet50"
+  TEXT_MODEL: "fc"
+  COMP_MODEL: "tirg"
+  LOSS: "bbc"
+  VOCAB: "two-hot"
+  COMP:
+    EMBED_DIM: 512
+    METHOD: "proj"
+INPUT:
+  HEIGHT: 224
+  WIDTH: 224
+DATASETS:
+  TRAIN: ("fashionpedia_outfit_train",)
+  TEST: ("fashionpedia_outfit_val",)
+SOLVER:
+  IMS_PER_BATCH: 64
+  NUM_EPOCHS: 40
+  BASE_LR: 0.0002
+  WEIGHT_DECAY: 0.00004
+  WEIGHT_DECAY_BIAS: 0.00004
+  CHECKPOINT_PERIOD: 20
+  LRSCHEDULER: 'step'
+  STEPS: (15, 25)
+  WARMUP_EPOCHS: 5
+TEST:
+  IMS_PER_BATCH: 64

@@ -70,9 +70,9 @@ class DisentangledTransformer(nn.Module):
         return out
 
 
-def build_cosmo(text_channel):
-    global_styler = GlobalStyleTransformer(2048, text_channel)
+def build_cosmo(text_channel, img_channel):
+    global_styler = GlobalStyleTransformer(img_channel, text_channel)
     cosmo = DisentangledTransformer(
-        2048, text_channel, num_heads=8, global_styler=global_styler
+        img_channel, text_channel, num_heads=8, global_styler=global_styler
     )
     return cosmo

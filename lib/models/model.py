@@ -500,7 +500,7 @@ class ProjMapModel(Model):
         )
         self.comp_model = build_composition(
             cfg=cfg,
-            img_channel=self.img_model.out_channels,
+            img_channel=cfg.MODEL.COMP.EMBED_DIM,
             text_channel=cfg.MODEL.COMP.EMBED_DIM,
         )
 
