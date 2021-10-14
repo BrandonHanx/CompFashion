@@ -1,13 +1,9 @@
 MODEL:
   IMG_MODEL: "resnet50"
-  TEXT_MODEL: "bigru"
-  COMP_MODEL: "rtic"
+  TEXT_MODEL: "fc"
+  COMP_MODEL: "csa-net"
   LOSS: "bbc"
-  VOCAB: "clip"
-  GRU:
-    EMBEDDING_SIZE: 512
-    NUM_UNITS: 1024
-    VOCABULARY_SIZE: 512
+  VOCAB: "two-hot"
   COMP:
     EMBED_DIM: 512
     METHOD: "proj"
@@ -15,8 +11,8 @@ INPUT:
   HEIGHT: 224
   WIDTH: 224
 DATASETS:
-  TRAIN: ("fashionpedia_comp_miner_train",)
-  TEST: ("fashionpedia_comp_miner_val",)
+  TRAIN: ("fashionpedia_outfit_train",)
+  TEST: ("fashionpedia_outfit_val",)
 SOLVER:
   IMS_PER_BATCH: 64
   NUM_EPOCHS: 40

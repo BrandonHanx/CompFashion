@@ -1,7 +1,7 @@
 MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
-  COMP_MODEL: "rtic"
+  COMP_MODEL: "csa-net"
   LOSS: "bbc"
   VOCAB: "clip"
   GRU:

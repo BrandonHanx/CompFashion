@@ -6,6 +6,7 @@ MODEL:
   VOCAB: "two-hot"
   COMP:
     EMBED_DIM: 512
+    METHOD: "proj"
 INPUT:
   HEIGHT: 224
   WIDTH: 224
