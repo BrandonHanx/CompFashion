@@ -13,6 +13,7 @@ __all__ = ["build_model"]
 
 class ConvProjector(nn.Module):
     def __init__(self, in_channel, out_channel):
+        super().__init__()
         assert in_channel > 2 * out_channel
         self.model = nn.Sequential(
             nn.Conv2d(
