@@ -11,6 +11,44 @@ from .layers import build_norm_layer
 __all__ = ["build_model"]
 
 
+class ConvProjector(nn.Module):
+    def __init__(self, in_channel, out_channel):
+        assert in_channel > 2 * out_channel
+        self.model = nn.Sequential(
+            nn.Conv2d(
+                in_channel,
+                out_channel * 2,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(out_channel * 2),
+            nn.ReLU(),
+            nn.Conv2d(
+                out_channel * 2,
+                out_channel,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(out_channel),
+            nn.ReLU(),
+            nn.Conv2d(
+                out_channel,
+                out_channel,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                bias=False,
+            ),
+        )
+
+    def forward(self, x):
+        return self.model(x)
+
+
 class Model(nn.Module):
     def __init__(self, cfg):
         super().__init__()
@@ -344,19 +382,13 @@ class HardCombineProjModel(CombineProjModel):
 class HardCombineProjMapModel(HardCombineProjModel):
     def __init__(self, cfg):
         super().__init__(cfg)
-        self.comp_proj = nn.Conv2d(
+        self.comp_proj = ConvProjector(
             self.img_model.out_channels,
             cfg.MODEL.COMP.EMBED_DIM,
-            kernel_size=1,
-            stride=1,
-            bias=False,
         )
-        self.outfit_proj = nn.Conv2d(
+        self.outfit_proj = ConvProjector(
             self.img_model.out_channels,
             cfg.MODEL.COMP.EMBED_DIM,
-            kernel_size=1,
-            stride=1,
-            bias=False,
         )
 
     def extract_img_feature(self, imgs, norm=False, comp_mode=True):
@@ -482,12 +514,9 @@ class ProjMapModel(Model):
         # self.img_proj_layer = nn.Linear(
         #     self.img_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
         # )
-        self.img_proj_layer = nn.Conv2d(
+        self.img_proj_layer = ConvProjector(
             self.img_model.out_channels,
             cfg.MODEL.COMP.EMBED_DIM,
-            kernel_size=1,
-            stride=1,
-            bias=False,
         )
         self.text_proj_layer = nn.Linear(
             self.text_model.out_channels, cfg.MODEL.COMP.EMBED_DIM
