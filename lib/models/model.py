@@ -341,42 +341,36 @@ class HardCombineProjModel(CombineProjModel):
         )
 
 
-class MultiModel(Model):
-    def __init__(self, cfg, k=2):
+class HardCombineProjMapModel(HardCombineProjModel):
+    def __init__(self, cfg):
         super().__init__(cfg)
-        self.comp_model_2 = build_composition(
-            cfg=cfg,
-            img_channel=self.img_model.out_channels,
-            text_channel=self.text_model.out_channels,
+        self.comp_proj = nn.Conv2d(
+            self.img_model.out_channels,
+            cfg.MODEL.COMP.EMBED_DIM,
+            kernel_size=1,
+            stride=1,
+            bias=False,
         )
-        self.comp_model = nn.ModuleList([self.comp_model, self.comp_model_2])
-        self.combine_fc = nn.Linear(
-            self.img_model.out_channels * k, self.img_model.out_channels
+        self.outfit_proj = nn.Conv2d(
+            self.img_model.out_channels,
+            cfg.MODEL.COMP.EMBED_DIM,
+            kernel_size=1,
+            stride=1,
+            bias=False,
         )
-        self.k = k
 
-    def compose_img_text_features(self, img_feats, text_feats):
-        comp_feats = []
-        for i in range(self.k):
-            comp_feats.append(self.comp_model[i](img_feats, text_feats))
-        comp_feats = comp_feats[0] + comp_feats[1]
-        return self.norm_layer(comp_feats)
-
-
-class MapModel(Model):
-    def extract_img_feature(self, imgs, norm=False):
+    def extract_img_feature(self, imgs, norm=False, comp_mode=True):
         img_feats = self.img_model(imgs)
         if norm:
-            return self.norm_layer(img_feats.mean((2, 3)))
-        return img_feats
+            if comp_mode:
+                return self.norm_layer(self.comp_proj(img_feats).mean((2, 3)))
+            return self.norm_layer(self.outfit_proj(img_feats).mean((2, 3)))
+        return self.comp_proj(img_feats), self.outfit_proj(img_feats)
 
-
-class DirectModel(Model):
-    def extract_img_feature(self, imgs, norm=False):
-        img_feats = self.img_model(imgs)
-        if norm:
-            return self.norm_layer(img_feats)
-        return img_feats
+    def compose_img_text_features(self, img_feats, text_feats, comp_mode=True):
+        if comp_mode:
+            return self.norm_layer(self.comp_model(img_feats, text_feats).mean((2, 3)))
+        return self.norm_layer(self.outfit_model(img_feats, text_feats).mean((2, 3)))
 
 
 class CorrModel(Model):
@@ -529,12 +523,6 @@ def build_model(cfg):
         model = MultiScaleModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "corr":
         model = CorrModel(cfg)
-    elif cfg.MODEL.COMP.METHOD == "map":
-        model = MapModel(cfg)
-    elif cfg.MODEL.COMP.METHOD == "direct":
-        model = DirectModel(cfg)
-    elif cfg.MODEL.COMP.METHOD == "multi":
-        model = MultiModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "combine":
         model = CombineModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "combine-proj":
@@ -547,6 +535,8 @@ def build_model(cfg):
         model = AutoCombineProjModel(cfg)
     elif cfg.MODEL.COMP.METHOD == "hard-combine-proj":
         model = HardCombineProjModel(cfg)
+    elif cfg.MODEL.COMP.METHOD == "hard-combine-proj-map":
+        model = HardCombineProjMapModel(cfg)
     else:
         raise NotImplementedError
     return model
