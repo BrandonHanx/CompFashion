@@ -2,6 +2,7 @@ import datetime
 import logging
 import time
 
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -35,6 +36,10 @@ def compute_on_dataset(model, data_loader, device):
 
     query_feats = torch.cat(query_feats, dim=0)
     gallery_feats = torch.cat(gallery_feats, dim=0)
+    if comp_mode:
+        np.save("comp_embeddings.npy", gallery_feats.cpu().numpy())
+    else:
+        np.save("outfit_embeddings.npy", gallery_feats.cpu().numpy())
 
     results_dict = dict(
         query_ids=torch.tensor(query_ids),

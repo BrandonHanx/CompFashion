@@ -40,7 +40,7 @@ class VAL(nn.Module):
         self_att = self.conv2(self_att)  # B x C x H x W
 
         composite_features = self.a[0] * joint_att * img_feat + self.a[1] * self_att
-        composite_features = composite_features.mean((2, 3))  # B x C
+        #         composite_features = composite_features.mean((2, 3))  # B x C
         return composite_features
 
 

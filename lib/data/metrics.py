@@ -19,11 +19,11 @@ def rank(similarity, q_ids, g_ids, topk=[1, 5, 10, 50], get_mAP=True):
     all_cmc = all_cmc.float().mean(0) * 100
     all_cmc = all_cmc[topk - 1]
 
-    # np.save("cmc.npy", matches.cpu().numpy())
-    # np.save("similarity.npy", max_sim.cpu().numpy())
-    # np.save("q_ids.npy", q_ids.cpu().numpy())
-    # np.save("g_ids.npy", g_ids.cpu().numpy())
-    # np.save("indices.npy", indices.cpu().numpy())
+    #     np.save("cmc.npy", matches.cpu().numpy())
+    #     np.save("similarity.npy", max_sim.cpu().numpy())
+    #     np.save("q_ids.npy", q_ids.cpu().numpy())
+    #     np.save("g_ids.npy", g_ids.cpu().numpy())
+    #     np.save("indices.npy", indices.cpu().numpy())
 
     if not get_mAP:
         return all_cmc, indices

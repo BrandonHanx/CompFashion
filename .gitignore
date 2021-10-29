@@ -3,6 +3,8 @@
 *.ipynb
 *.npy
 *.pdf
+*.jpg
+*.hdf5
 
 output/
 train_data/
