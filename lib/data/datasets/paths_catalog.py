@@ -79,6 +79,21 @@ class DatasetCatalog:
             "split": "test",
             "cat_type": "outfit",
         },
+        "fashionpedia_outfit_wa_train": {
+            "path": "fashionpedia",
+            "split": "train",
+            "cat_type": "outfit_wa",
+        },
+        "fashionpedia_outfit_wa_val": {
+            "path": "fashionpedia",
+            "split": "val",
+            "cat_type": "outfit_wa",
+        },
+        "fashionpedia_outfit_wa_test": {
+            "path": "fashionpedia",
+            "split": "test",
+            "cat_type": "outfit_wa",
+        },
         "fashionpedia_combine_train": {
             "path": "fashionpedia",
             "split": "train",

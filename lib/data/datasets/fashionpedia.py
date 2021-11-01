@@ -68,7 +68,16 @@ class FashionPedia(Dataset):
             target_onehot = F.one_hot(
                 torch.tensor(int(self.data[idx]["target_cls"])), num_classes=27
             )
-            text = torch.cat([candidate_onehot, target_onehot])
+            if self.cat_type == "outfit":
+                text = torch.cat([candidate_onehot, target_onehot])
+            elif self.cat_type == "outfit_wa":
+                attribute_hot = torch.zeros(365)
+                attribute = self.data[idx]["captions"]
+                if len(attribute) > 0:
+                    attribute_hot[attribute] = 1
+                text = torch.cat([candidate_onehot, target_onehot, attribute_hot])
+            else:
+                NotImplementedError
         else:
             text = self.vocab[self.data[idx]["wv"]]
 
