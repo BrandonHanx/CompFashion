@@ -188,17 +188,70 @@ def inference(
     )
 
 
-def _single_turn(model, imgs, texts, text_lengths, gallery_feats, device):
-    imgs = imgs.to(device)
-    texts = texts.to(device)
-    text_lengths = text_lengths.to(device)
-
+def _single_turn(model, img_feats, text_feats, gallery_feats):
     with torch.no_grad():
-
-        query_feats = model.compose_img_text(imgs, texts, text_lengths, comp_mode=True)
+        query_feats = model.compose_img_text_features(img_feats, text_feats)
         similarity = query_feats @ gallery_feats.t()
         max_idx = torch.argmax(similarity, dim=1)
     return max_idx, similarity
+
+
+def _three_turns(
+    tgr_model,
+    vcr_model,
+    tgr_img_feats,
+    vcr_img_feats,
+    tgr_text_feats,
+    vcr_text_feats,
+    gallery_tgr_feats,
+    gallery_vcr_feats,
+    mode,
+    turn_idxs,
+    tgr_nums,
+):
+    if not mode[2]:
+        max_idx_1, _ = _single_turn(
+            tgr_model,
+            tgr_img_feats[turn_idxs[:, 0]],
+            tgr_text_feats[turn_idxs[:, 0]],
+            gallery_tgr_feats,
+        )
+    else:
+        max_idx_1, _ = _single_turn(
+            vcr_model,
+            vcr_img_feats[turn_idxs[:, 0] - tgr_nums],
+            vcr_text_feats[turn_idxs[:, 0] - tgr_nums],
+            gallery_vcr_feats,
+        )
+    if not mode[1]:
+        max_idx_2, _ = _single_turn(
+            tgr_model,
+            tgr_img_feats[max_idx_1],
+            tgr_text_feats[turn_idxs[:, 1]],
+            gallery_tgr_feats,
+        )
+    else:
+        max_idx_2, _ = _single_turn(
+            vcr_model,
+            vcr_img_feats[max_idx_1],
+            vcr_text_feats[turn_idxs[:, 1] - tgr_nums],
+            gallery_vcr_feats,
+        )
+    if not mode[0]:
+        _, similarity = _single_turn(
+            tgr_model,
+            tgr_img_feats[max_idx_2],
+            tgr_text_feats[turn_idxs[:, 2]],
+            gallery_tgr_feats,
+        )
+    else:
+        _, similarity = _single_turn(
+            vcr_model,
+            vcr_img_feats[max_idx_2],
+            vcr_text_feats[turn_idxs[:, 2] - tgr_nums],
+            gallery_vcr_feats,
+        )
+    return similarity
 
 
 def two_models_inference(
@@ -229,250 +282,178 @@ def two_models_inference(
             )
         ):
             imgs = imgs.to(device)
-            gallery_tgr_feat = tgr_model.extract_img_feature(imgs, norm=True)
-            gallery_vcr_feat = vcr_model.extract_img_feature(imgs, norm=True)
+            gallery_tgr_feat = tgr_model.extract_img_feature(imgs, norm=False)
+            gallery_vcr_feat = vcr_model.extract_img_feature(imgs, norm=False)
             gallery_tgr_feats.append(gallery_tgr_feat)
             gallery_vcr_feats.append(gallery_vcr_feat)
 
         gallery_tgr_feats = torch.cat(gallery_tgr_feats, dim=0)
         gallery_vcr_feats = torch.cat(gallery_vcr_feats, dim=0)
+        gallery_tgr_feats_norm = tgr_model.norm_layer(gallery_tgr_feats)
+        gallery_vcr_feats_norm = vcr_model.norm_layer(gallery_vcr_feats)
+        if len(gallery_tgr_feats_norm.shape) > 2:
+            gallery_tgr_feats_norm = gallery_tgr_feats_norm.mean((2, 3))
+            gallery_vcr_feats_norm = gallery_vcr_feats_norm.mean((2, 3))
 
-        logger.info("Collecting VCR one-hot labels...")
-        vcr_texts = []
+        logger.info("Collecting TGR features...")
+        tgr_text_feats = []
+        for batch_data in tqdm(tgr_data_loader):
+            texts = batch_data["text"].to(device)
+            text_lengths = batch_data["text_lengths"].to(device)
+            text_feats = tgr_model.extract_text_feature(texts, text_lengths)
+            tgr_text_feats.append(text_feats)
+        tgr_text_feats = torch.cat(tgr_text_feats, dim=0).cpu()
+
+        logger.info("Collecting VCR one-hot features...")
+        vcr_text_feats = []
         for batch_data in tqdm(vcr_data_loader):
             texts = batch_data["text"].to(device)
-            vcr_texts.append(texts)
-        vcr_texts = torch.cat(vcr_texts, dim=0).cpu()
+            text_lengths = batch_data["text_lengths"].to(device)
+            text_feats = vcr_model.extract_text_feature(texts, text_lengths)
+            vcr_text_feats.append(text_feats)
+        vcr_text_feats = torch.cat(vcr_text_feats, dim=0).cpu()
 
         logger.info("Calculating type 0...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=0)):
             query_ids.append(batch_data["meta_info"]["target_image_ids"])
-            max_idx_1, _ = _single_turn(
+            similarity = _three_turns(
                 tgr_model,
-                batch_data["source_images"],
-                batch_data["text"][0],
-                batch_data["text_lengths"][0],
+                vcr_model,
                 gallery_tgr_feats,
-                device,
-            )
-            max_idx_2, _ = _single_turn(
-                tgr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_1.cpu()),
-                batch_data["text"][1],
-                batch_data["text_lengths"][1],
-                gallery_tgr_feats,
-                device,
-            )
-            _, similarity = _single_turn(
-                tgr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_2.cpu()),
-                batch_data["text"][2],
-                batch_data["text_lengths"][2],
-                gallery_tgr_feats,
-                device,
+                gallery_vcr_feats,
+                tgr_text_feats,
+                vcr_text_feats,
+                gallery_tgr_feats_norm,
+                gallery_vcr_feats_norm,
+                [False, False, False],
+                batch_data["meta_info"]["turn_idxs"],
+                tgr_nums,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 1...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=1)):
             query_ids.append(batch_data["meta_info"]["target_image_ids"])
-            max_idx_1, _ = _single_turn(
+            similarity = _three_turns(
                 tgr_model,
-                batch_data["source_images"],
-                batch_data["text"][0],
-                batch_data["text_lengths"][0],
-                gallery_tgr_feats,
-                device,
-            )
-            max_idx_2, _ = _single_turn(
-                tgr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_1.cpu()),
-                batch_data["text"][1],
-                batch_data["text_lengths"][1],
-                gallery_tgr_feats,
-                device,
-            )
-            _, similarity = _single_turn(
                 vcr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_2.cpu()),
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 2] - tgr_nums],
-                batch_data["text_lengths"][2],  # not used
+                gallery_tgr_feats,
                 gallery_vcr_feats,
-                device,
+                tgr_text_feats,
+                vcr_text_feats,
+                gallery_tgr_feats_norm,
+                gallery_vcr_feats_norm,
+                [False, False, True],
+                batch_data["meta_info"]["turn_idxs"],
+                tgr_nums,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 2...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=2)):
             query_ids.append(batch_data["meta_info"]["target_image_ids"])
-            max_idx_1, _ = _single_turn(
+            similarity = _three_turns(
                 tgr_model,
-                batch_data["source_images"],
-                batch_data["text"][0],
-                batch_data["text_lengths"][0],
-                gallery_tgr_feats,
-                device,
-            )
-            max_idx_2, _ = _single_turn(
                 vcr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_1.cpu()),
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 1] - tgr_nums],
-                batch_data["text_lengths"][1],  # not used
-                gallery_vcr_feats,
-                device,
-            )
-            _, similarity = _single_turn(
-                tgr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_2.cpu()),
-                batch_data["text"][2],
-                batch_data["text_lengths"][2],
                 gallery_tgr_feats,
-                device,
+                gallery_vcr_feats,
+                tgr_text_feats,
+                vcr_text_feats,
+                gallery_tgr_feats_norm,
+                gallery_vcr_feats_norm,
+                [False, True, False],
+                batch_data["meta_info"]["turn_idxs"],
+                tgr_nums,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 3...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=3)):
             query_ids.append(batch_data["meta_info"]["target_image_ids"])
-            max_idx_1, _ = _single_turn(
+            similarity = _three_turns(
                 tgr_model,
-                batch_data["source_images"],
-                batch_data["text"][0],
-                batch_data["text_lengths"][0],
+                vcr_model,
                 gallery_tgr_feats,
-                device,
-            )
-            max_idx_2, _ = _single_turn(
-                vcr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_1.cpu()),
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 1] - tgr_nums],
-                batch_data["text_lengths"][1],  # not used
                 gallery_vcr_feats,
-                device,
-            )
-            _, similarity = _single_turn(
-                vcr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_2.cpu()),
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 2] - tgr_nums],
-                batch_data["text_lengths"][2],  # not used
-                gallery_vcr_feats,
-                device,
+                tgr_text_feats,
+                vcr_text_feats,
+                gallery_tgr_feats_norm,
+                gallery_vcr_feats_norm,
+                [False, True, True],
+                batch_data["meta_info"]["turn_idxs"],
+                tgr_nums,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 4...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=4)):
             query_ids.append(batch_data["meta_info"]["target_image_ids"])
-            max_idx_1, _ = _single_turn(
+            similarity = _three_turns(
+                tgr_model,
                 vcr_model,
-                batch_data["source_images"],
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 0] - tgr_nums],
-                batch_data["text_lengths"][0],  # not used
+                gallery_tgr_feats,
                 gallery_vcr_feats,
-                device,
-            )
-            max_idx_2, _ = _single_turn(
-                tgr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_1.cpu()),
-                batch_data["text"][1],
-                batch_data["text_lengths"][1],
-                gallery_tgr_feats,
-                device,
-            )
-            _, similarity = _single_turn(
-                tgr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_2.cpu()),
-                batch_data["text"][2],
-                batch_data["text_lengths"][2],
-                gallery_tgr_feats,
-                device,
+                tgr_text_feats,
+                vcr_text_feats,
+                gallery_tgr_feats_norm,
+                gallery_vcr_feats_norm,
+                [True, False, False],
+                batch_data["meta_info"]["turn_idxs"],
+                tgr_nums,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 5...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=5)):
             query_ids.append(batch_data["meta_info"]["target_image_ids"])
-            max_idx_1, _ = _single_turn(
-                vcr_model,
-                batch_data["source_images"],
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 0] - tgr_nums],
-                batch_data["text_lengths"][0],  # not used
-                gallery_vcr_feats,
-                device,
-            )
-            max_idx_2, _ = _single_turn(
+            similarity = _three_turns(
                 tgr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_1.cpu()),
-                batch_data["text"][1],
-                batch_data["text_lengths"][1],
-                gallery_tgr_feats,
-                device,
-            )
-            _, similarity = _single_turn(
                 vcr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_2.cpu()),
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 2] - tgr_nums],
-                batch_data["text_lengths"][2],  # not used
+                gallery_tgr_feats,
                 gallery_vcr_feats,
-                device,
+                tgr_text_feats,
+                vcr_text_feats,
+                gallery_tgr_feats_norm,
+                gallery_vcr_feats_norm,
+                [True, False, True],
+                batch_data["meta_info"]["turn_idxs"],
+                tgr_nums,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 6...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=6)):
             query_ids.append(batch_data["meta_info"]["target_image_ids"])
-            max_idx_1, _ = _single_turn(
-                vcr_model,
-                batch_data["source_images"],
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 0] - tgr_nums],
-                batch_data["text_lengths"][0],  # not used
-                gallery_vcr_feats,
-                device,
-            )
-            max_idx_2, _ = _single_turn(
-                vcr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_1.cpu()),
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 1] - tgr_nums],
-                batch_data["text_lengths"][1],  # not used
-                gallery_vcr_feats,
-                device,
-            )
-            _, similarity = _single_turn(
+            similarity = _three_turns(
                 tgr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_2.cpu()),
-                batch_data["text"][2],
-                batch_data["text_lengths"][2],
+                vcr_model,
                 gallery_tgr_feats,
-                device,
+                gallery_vcr_feats,
+                tgr_text_feats,
+                vcr_text_feats,
+                gallery_tgr_feats_norm,
+                gallery_vcr_feats_norm,
+                [True, True, False],
+                batch_data["meta_info"]["turn_idxs"],
+                tgr_nums,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 7...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=7)):
             query_ids.append(batch_data["meta_info"]["target_image_ids"])
-            max_idx_1, _ = _single_turn(
+            similarity = _three_turns(
+                tgr_model,
                 vcr_model,
-                batch_data["source_images"],
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 0] - tgr_nums],
-                batch_data["text_lengths"][0],  # not used
+                gallery_tgr_feats,
                 gallery_vcr_feats,
-                device,
-            )
-            max_idx_2, _ = _single_turn(
-                vcr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_1.cpu()),
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 1] - tgr_nums],
-                batch_data["text_lengths"][1],  # not used
-                gallery_vcr_feats,
-                device,
-            )
-            _, similarity = _single_turn(
-                vcr_model,
-                tgr_data_loader.dataset.get_specific_imgs(max_idx_2.cpu()),
-                vcr_texts[batch_data["meta_info"]["turn_idxs"][:, 2] - tgr_nums],
-                batch_data["text_lengths"][2],  # not used
-                gallery_vcr_feats,
-                device,
+                tgr_text_feats,
+                vcr_text_feats,
+                gallery_tgr_feats_norm,
+                gallery_vcr_feats_norm,
+                [True, True, True],
+                batch_data["meta_info"]["turn_idxs"],
+                tgr_nums,
             )
             similarities.append(similarity)
 
