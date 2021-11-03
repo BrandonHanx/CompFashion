@@ -18,5 +18,4 @@ class FC(nn.Module):
 
 
 def build_fc(cfg):
-    return FC(419, 2048)
-    # return FC(54, 2048)
+    return FC(54, 2048)

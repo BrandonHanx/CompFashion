@@ -54,9 +54,9 @@ def multiturn_collate_fn(batch):
         target_image_ids.append(info["target_img_id"])
         turn_idxs.append(info["turn_idxs"])
     meta_info = dict(
-        source_img_ids=source_img_ids,
-        target_image_ids=target_image_ids,
-        turn_idxs=turn_idxs,
+        source_img_ids=torch.tensor(source_img_ids),
+        target_image_ids=torch.tensor(target_image_ids),
+        turn_idxs=torch.tensor(turn_idxs),
     )
 
     return {

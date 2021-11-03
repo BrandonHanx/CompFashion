@@ -51,8 +51,8 @@ def main():
     )
     parser.add_argument(
         "--vcr-dataset",
-        default="fashionpedia_outfit_test",
-        type=str,
+        default=["fashionpedia_outfit_test"],
+        type=list,
     )
     parser.add_argument(
         "opts",
@@ -70,6 +70,7 @@ def main():
     tgr_cfg.freeze()
 
     vcr_cfg.merge_from_file(args.vcr_config_file)
+    vcr_cfg.DATASETS.TEST = args.vcr_dataset
     vcr_cfg.freeze()
 
     tgr_model = build_model(tgr_cfg)
@@ -79,7 +80,7 @@ def main():
     vcr_model.to(device)
 
     tgr_output_dir = args.tgr_config_file[8:-5]
-    vcr_output_dir = args.vcr_config_file[8:-5]
+    vcr_output_dir = args.vcr_config_file[20:-5]
 
     tgr_checkpointer = Checkpointer(
         tgr_model, save_dir=os.path.join("./output", tgr_output_dir)
@@ -93,7 +94,7 @@ def main():
     dataset_names = tgr_cfg.DATASETS.TEST
     assert len(dataset_names) == 1
 
-    output_folder = os.path.join("./output", tgr_output_dir + vcr_output_dir)
+    output_folder = os.path.join("./output", tgr_output_dir + "+" + vcr_output_dir)
     makedir(output_folder)
 
     tgr_data_loader = build_data_loader(tgr_cfg, is_train=False, is_distributed=None)[0]
