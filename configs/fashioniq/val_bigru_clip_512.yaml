@@ -1,7 +1,7 @@
 MODEL:
   IMG_MODEL: "resnet50"
   TEXT_MODEL: "bigru"
-  COMP_MODEL: "tirg"
+  COMP_MODEL: "val"
   LOSS: "bbc"
   VOCAB: "clip"
   GRU:
@@ -10,24 +10,22 @@ MODEL:
     VOCABULARY_SIZE: 512
   COMP:
     EMBED_DIM: 512
-    METHOD: "hard-combine-proj"
+    METHOD: "proj-map"
 INPUT:
   HEIGHT: 224
   WIDTH: 224
 DATASETS:
-#   TRAIN: ("fashionpedia_combine_val",)
-#   TEST: ("fashionpedia_comp_test", "fashionpedia_outfit_test")
-  TRAIN: ("fashionpedia_combine_train",)
-  TEST: ("fashionpedia_comp_miner_val", "fashionpedia_outfit_val")
+  TRAIN: ("fashioniq_dress_train", "fashioniq_shirt_train", "fashioniq_toptee_train")
+  TEST: ("fashioniq_dress_val", "fashioniq_shirt_val", "fashioniq_toptee_val")
 SOLVER:
-  IMS_PER_BATCH: 64
-  NUM_EPOCHS: 45
+  IMS_PER_BATCH: 32
+  NUM_EPOCHS: 80
   BASE_LR: 0.0002
   WEIGHT_DECAY: 0.00004
   WEIGHT_DECAY_BIAS: 0.00004
-  CHECKPOINT_PERIOD: 20
+  CHECKPOINT_PERIOD: 40
   LRSCHEDULER: 'step'
-  STEPS: (15, 25)
+  STEPS: (30, 50)
   WARMUP_EPOCHS: 5
 TEST:
   IMS_PER_BATCH: 64

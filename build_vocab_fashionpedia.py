@@ -65,7 +65,8 @@ for cap_file in cap_files:
 
 
 # # Build vocab
-# cap_files = glob("train_data/fashionpedia/comp_miner*.json")
+# # cap_files = glob("train_data/fashionpedia/comp_miner*.json")
+# cap_files = glob("train_data/fashionpedia/hybrid_triplets_test_turn3.json")
 # vocab = read_json("train_data/fashionpedia/vocab.json")
 
 # # Build cap file
@@ -80,7 +81,9 @@ for cap_file in cap_files:
 #     # Process
 #     for data in tqdm(cap_data):
 #         captions = data["captions"]
-#         data["wv"] = (
-#             get_tokens(captions[0]) + [vocab["<LINK>"]] + get_tokens(captions[1])
-#         )
+#         data["wv"] = []
+#         for caption in captions:
+#             data["wv"].append(
+#                 get_tokens(caption[0]) + [vocab["<LINK>"]] + get_tokens(caption[1])
+#             )
 #     write_json(cap_data, save_file)
