@@ -69,6 +69,9 @@ def compute_on_dataset_multiturn(model, data_loader, device):
     gallery_outfit_feats = torch.cat(gallery_outfit_feats, dim=0)
     gallery_comp_feats_norm = model.norm_layer(gallery_comp_feats)
     gallery_outfit_feats_norm = model.norm_layer(gallery_outfit_feats)
+    if len(gallery_outfit_feats_norm.shape) > 2:
+        gallery_comp_feats_norm = gallery_comp_feats_norm.mean((2, 3))
+        gallery_outfit_feats_norm = gallery_outfit_feats_norm.mean((2, 3))
 
     for batch_data in tqdm(data_loader):
         imgs = batch_data["source_images"].to(device)
@@ -173,9 +176,11 @@ def _single_turn(model, imgs, texts, text_lengths, gallery_feats, device):
     texts = texts.to(device)
     text_lengths = text_lengths.to(device)
 
-    query_feats = model.compose_img_text(imgs, texts, text_lengths, comp_mode=True)
-    similarity = query_feats @ gallery_feats.t()
-    max_idx = torch.argmax(similarity, dim=1)
+    with torch.no_grad():
+
+        query_feats = model.compose_img_text(imgs, texts, text_lengths, comp_mode=True)
+        similarity = query_feats @ gallery_feats.t()
+        max_idx = torch.argmax(similarity, dim=1)
     return max_idx, similarity
 
 
