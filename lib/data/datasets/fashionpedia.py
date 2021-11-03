@@ -106,3 +106,9 @@ class FashionPedia(Dataset):
                 batch_imgs = imgs
                 imgs = []
                 yield torch.stack(batch_imgs)
+
+    def get_specifc_imgs(self, spec_list):
+        imgs = []
+        for x in spec_list:
+            imgs.append(self.get_img(self.all_img_names[x]))
+        return torch.stack(imgs)

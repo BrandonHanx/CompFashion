@@ -48,15 +48,15 @@ def multiturn_collate_fn(batch):
         texts.append(text)
         text_lengths.append(text_length)
 
-    source_img_ids, target_image_ids, original_captions = [], [], []
+    source_img_ids, target_image_ids, turn_idxs = [], [], []
     for info in meta_info:
         source_img_ids.append(info["source_img_id"])
         target_image_ids.append(info["target_img_id"])
-        original_captions.append(info["original_caption"])
+        turn_idxs.append(info["turn_idxs"])
     meta_info = dict(
         source_img_ids=source_img_ids,
         target_image_ids=target_image_ids,
-        original_captions=original_captions,
+        turn_idxs=turn_idxs,
     )
 
     return {

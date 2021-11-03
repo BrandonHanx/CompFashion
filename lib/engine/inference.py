@@ -2,7 +2,7 @@ import datetime
 import logging
 import time
 
-import numpy as np
+# import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -36,10 +36,10 @@ def compute_on_dataset(model, data_loader, device):
 
     query_feats = torch.cat(query_feats, dim=0)
     gallery_feats = torch.cat(gallery_feats, dim=0)
-    if comp_mode:
-        np.save("comp_embeddings.npy", gallery_feats.cpu().numpy())
-    else:
-        np.save("outfit_embeddings.npy", gallery_feats.cpu().numpy())
+    # if comp_mode:
+    #     np.save("comp_embeddings.npy", gallery_feats.cpu().numpy())
+    # else:
+    #     np.save("outfit_embeddings.npy", gallery_feats.cpu().numpy())
 
     results_dict = dict(
         query_ids=torch.tensor(query_ids),
@@ -161,6 +161,103 @@ def inference(
 
     if not is_main_process():
         return
+
+    return evaluation(
+        predictions=predictions,
+        topk=torch.tensor([1, 5, 10, 50]),
+    )
+
+
+def _single_turn(model, imgs, texts, text_lengths, gallery_feats, device):
+    imgs = imgs.to(device)
+    texts = texts.to(device)
+    text_lengths = text_lengths.to(device)
+
+    query_feats = model.compose_img_text(imgs, texts, text_lengths, comp_mode=True)
+    similarity = query_feats @ gallery_feats.t()
+    max_idx = torch.argmax(similarity, dim=1)
+    return max_idx, similarity
+
+
+def two_models_inference(
+    tgr_model,
+    vcr_model,
+    tgr_data_loader,
+    vcr_data_loader,
+    device="cuda",
+):
+    device = torch.device(device)
+
+    all_nums = len(tgr_data_loader.dataset)
+    vcr_nums = len(vcr_data_loader.dataset)
+    tgr_nums = all_nums - vcr_nums
+
+    tgr_model.eval()
+    vcr_model.eval()
+    query_ids = []
+    gallery_tgr_feats, gallery_vcr_feats, similarities = [], [], []
+
+    with torch.no_grad():
+
+        logger = logging.getLogger("CompFashion.inference")
+        logger.info("Calculating gallery features...")
+        for imgs in tqdm(
+            tgr_data_loader.dataset.get_all_imgs(
+                tgr_data_loader.batch_sampler.batch_size
+            )
+        ):
+            imgs = imgs.to(device)
+            gallery_tgr_feat = tgr_model.extract_img_feature(imgs, norm=True)
+            gallery_vcr_feat = vcr_model.extract_img_feature(imgs, norm=True)
+            gallery_tgr_feats.append(gallery_tgr_feat)
+            gallery_vcr_feats.append(gallery_vcr_feat)
+
+        gallery_tgr_feats = torch.cat(gallery_tgr_feats, dim=0)
+        gallery_vcr_feats = torch.cat(gallery_vcr_feats, dim=0)
+
+        logger.info("Collecting VCR one-hot labels...")
+        vcr_texts = []
+        for batch_data in tqdm(vcr_data_loader):
+            texts = batch_data["text"].to(device)
+            vcr_texts.append(texts)
+        vcr_texts = torch.cat(vcr_texts, dim=0)
+
+        logger.info("Calculating type 1...")
+        for batch_data in tqdm(tgr_data_loader.dataset.get_specifc_turn(turn_mode=1)):
+            query_ids.extend(batch_data["meta_info"]["target_image_ids"])
+            max_idx_1, _ = _single_turn(
+                tgr_model,
+                batch_data["source_images"],
+                batch_data["texts"][0],
+                batch_data["text_lengths"][0],
+                gallery_tgr_feats,
+                device,
+            )
+            max_idx_2, _ = _single_turn(
+                tgr_model,
+                tgr_data_loader.dataset.get_specifc_imgs(max_idx_1),
+                batch_data["texts"][1],
+                batch_data["text_lengths"][1],
+                gallery_tgr_feats,
+                device,
+            )
+            _, similarity = _single_turn(
+                vcr_model,
+                vcr_data_loader.dataset.get_specifc_imgs(max_idx_2),
+                vcr_texts[batch_data["meta_info"]["turn_idxs"][2] - tgr_nums],
+                None,
+                gallery_vcr_feats,
+                device,
+            )
+            similarities.append(similarity)
+
+    similarities = torch.cat(similarities, dim=0)
+
+    predictions = dict(
+        query_ids=query_ids,
+        gallery_ids=torch.tensor(list(tgr_data_loader.dataset.all_img_ids.values())),
+        similarity=similarities,
+    )
 
     return evaluation(
         predictions=predictions,

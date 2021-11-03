@@ -46,18 +46,6 @@ def main():
         default=None,
         nargs=argparse.REMAINDER,
     )
-    parser.add_argument(
-        "--save-data",
-        help="Save predicted results",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--rerank",
-        help="Use k-reciprocal post-processing",
-        action="store_true",
-        default=False,
-    )
 
     args = parser.parse_args()
 

@@ -1,5 +1,7 @@
 import numpy as np
 
+from lib.data.collate_batch import multiturn_collate_fn
+
 from .fashionpedia import FashionPedia
 
 
@@ -23,12 +25,13 @@ class FashionPediaMultiTurn(FashionPedia):
         return f"{self.path}/{self.cat_type}_triplets_dict_{self.split}_turn{self.turn}.json"
 
     def __getitem__(self, idx):
+        # FIXME: need optimization
         source_img_name = self.data[idx]["candidate"]
         target_img_name = self.data[idx]["target"]
         meta_info = {
             "source_img_id": self.all_img_ids[source_img_name],
             "target_img_id": self.all_img_ids[target_img_name],
-            "original_caption": self.data[idx]["captions"],
+            "turn_idxs": self.data[idx]["turn_idxs"],
         }
         source_image = self.get_img(source_img_name)
         target_image = self.get_img(target_img_name)
@@ -43,3 +46,17 @@ class FashionPediaMultiTurn(FashionPedia):
         args.extend(text)
 
         return tuple(args)
+
+    def get_specifc_turn(self, turn_mode, batch_size=64):
+        turn_mode_list = []
+        for i, data in enumerate(self.data):
+            if self.data["turn_mode"] == turn_mode:
+                turn_mode_list.append(i)
+
+        data = []
+        for idx in turn_mode_list:
+            data.append(self.__getitem__(idx))
+            if len(data) == batch_size or idx == turn_mode_list[-1]:
+                batch_data = data
+                data = []
+                yield multiturn_collate_fn(batch_data)
