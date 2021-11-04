@@ -208,18 +208,19 @@ def _three_turns(
     mode,
     turn_idxs,
     tgr_nums,
+    idx_to_id,
 ):
-    if not mode[2]:
+    if not mode[0]:
         max_idx_1, _ = _single_turn(
             tgr_model,
-            tgr_img_feats[turn_idxs[:, 0]],
+            tgr_img_feats[idx_to_id[turn_idxs[:, 0]]],
             tgr_text_feats[turn_idxs[:, 0]],
             gallery_tgr_feats,
         )
     else:
         max_idx_1, _ = _single_turn(
             vcr_model,
-            vcr_img_feats[turn_idxs[:, 0] - tgr_nums],
+            vcr_img_feats[idx_to_id[turn_idxs[:, 0]]],
             vcr_text_feats[turn_idxs[:, 0] - tgr_nums],
             gallery_vcr_feats,
         )
@@ -237,7 +238,7 @@ def _three_turns(
             vcr_text_feats[turn_idxs[:, 1] - tgr_nums],
             gallery_vcr_feats,
         )
-    if not mode[0]:
+    if not mode[2]:
         _, similarity = _single_turn(
             tgr_model,
             tgr_img_feats[max_idx_2],
@@ -297,12 +298,17 @@ def two_models_inference(
 
         logger.info("Collecting TGR features...")
         tgr_text_feats = []
+        idx_to_id = []
         for batch_data in tqdm(tgr_data_loader):
-            texts = batch_data["text"].to(device)
-            text_lengths = batch_data["text_lengths"].to(device)
+            texts = batch_data["text"][0].to(device)
+            text_lengths = batch_data["text_lengths"][0].to(device)
+            source_img_ids = batch_data["meta_info"]["source_img_ids"].to(device)
             text_feats = tgr_model.extract_text_feature(texts, text_lengths)
             tgr_text_feats.append(text_feats)
-        tgr_text_feats = torch.cat(tgr_text_feats, dim=0).cpu()
+            idx_to_id.append(source_img_ids)
+        tgr_text_feats = torch.cat(tgr_text_feats, dim=0)
+        tgr_text_feats = tgr_text_feats[:tgr_nums]
+        idx_to_id = torch.cat(idx_to_id, dim=0)
 
         logger.info("Collecting VCR one-hot features...")
         vcr_text_feats = []
@@ -311,11 +317,13 @@ def two_models_inference(
             text_lengths = batch_data["text_lengths"].to(device)
             text_feats = vcr_model.extract_text_feature(texts, text_lengths)
             vcr_text_feats.append(text_feats)
-        vcr_text_feats = torch.cat(vcr_text_feats, dim=0).cpu()
+        vcr_text_feats = torch.cat(vcr_text_feats, dim=0)
 
         logger.info("Calculating type 0...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=0)):
-            query_ids.append(batch_data["meta_info"]["target_image_ids"])
+            target_image_ids = batch_data["meta_info"]["target_image_ids"].to(device)
+            turn_idxs = batch_data["meta_info"]["turn_idxs"].to(device)
+            query_ids.append(target_image_ids)
             similarity = _three_turns(
                 tgr_model,
                 vcr_model,
@@ -326,14 +334,17 @@ def two_models_inference(
                 gallery_tgr_feats_norm,
                 gallery_vcr_feats_norm,
                 [False, False, False],
-                batch_data["meta_info"]["turn_idxs"],
+                turn_idxs,
                 tgr_nums,
+                idx_to_id,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 1...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=1)):
-            query_ids.append(batch_data["meta_info"]["target_image_ids"])
+            target_image_ids = batch_data["meta_info"]["target_image_ids"].to(device)
+            turn_idxs = batch_data["meta_info"]["turn_idxs"].to(device)
+            query_ids.append(target_image_ids)
             similarity = _three_turns(
                 tgr_model,
                 vcr_model,
@@ -344,14 +355,17 @@ def two_models_inference(
                 gallery_tgr_feats_norm,
                 gallery_vcr_feats_norm,
                 [False, False, True],
-                batch_data["meta_info"]["turn_idxs"],
+                turn_idxs,
                 tgr_nums,
+                idx_to_id,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 2...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=2)):
-            query_ids.append(batch_data["meta_info"]["target_image_ids"])
+            target_image_ids = batch_data["meta_info"]["target_image_ids"].to(device)
+            turn_idxs = batch_data["meta_info"]["turn_idxs"].to(device)
+            query_ids.append(target_image_ids)
             similarity = _three_turns(
                 tgr_model,
                 vcr_model,
@@ -362,14 +376,17 @@ def two_models_inference(
                 gallery_tgr_feats_norm,
                 gallery_vcr_feats_norm,
                 [False, True, False],
-                batch_data["meta_info"]["turn_idxs"],
+                turn_idxs,
                 tgr_nums,
+                idx_to_id,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 3...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=3)):
-            query_ids.append(batch_data["meta_info"]["target_image_ids"])
+            target_image_ids = batch_data["meta_info"]["target_image_ids"].to(device)
+            turn_idxs = batch_data["meta_info"]["turn_idxs"].to(device)
+            query_ids.append(target_image_ids)
             similarity = _three_turns(
                 tgr_model,
                 vcr_model,
@@ -380,14 +397,17 @@ def two_models_inference(
                 gallery_tgr_feats_norm,
                 gallery_vcr_feats_norm,
                 [False, True, True],
-                batch_data["meta_info"]["turn_idxs"],
+                turn_idxs,
                 tgr_nums,
+                idx_to_id,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 4...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=4)):
-            query_ids.append(batch_data["meta_info"]["target_image_ids"])
+            target_image_ids = batch_data["meta_info"]["target_image_ids"].to(device)
+            turn_idxs = batch_data["meta_info"]["turn_idxs"].to(device)
+            query_ids.append(target_image_ids)
             similarity = _three_turns(
                 tgr_model,
                 vcr_model,
@@ -398,14 +418,17 @@ def two_models_inference(
                 gallery_tgr_feats_norm,
                 gallery_vcr_feats_norm,
                 [True, False, False],
-                batch_data["meta_info"]["turn_idxs"],
+                turn_idxs,
                 tgr_nums,
+                idx_to_id,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 5...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=5)):
-            query_ids.append(batch_data["meta_info"]["target_image_ids"])
+            target_image_ids = batch_data["meta_info"]["target_image_ids"].to(device)
+            turn_idxs = batch_data["meta_info"]["turn_idxs"].to(device)
+            query_ids.append(target_image_ids)
             similarity = _three_turns(
                 tgr_model,
                 vcr_model,
@@ -416,14 +439,17 @@ def two_models_inference(
                 gallery_tgr_feats_norm,
                 gallery_vcr_feats_norm,
                 [True, False, True],
-                batch_data["meta_info"]["turn_idxs"],
+                turn_idxs,
                 tgr_nums,
+                idx_to_id,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 6...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=6)):
-            query_ids.append(batch_data["meta_info"]["target_image_ids"])
+            target_image_ids = batch_data["meta_info"]["target_image_ids"].to(device)
+            turn_idxs = batch_data["meta_info"]["turn_idxs"].to(device)
+            query_ids.append(target_image_ids)
             similarity = _three_turns(
                 tgr_model,
                 vcr_model,
@@ -434,14 +460,17 @@ def two_models_inference(
                 gallery_tgr_feats_norm,
                 gallery_vcr_feats_norm,
                 [True, True, False],
-                batch_data["meta_info"]["turn_idxs"],
+                turn_idxs,
                 tgr_nums,
+                idx_to_id,
             )
             similarities.append(similarity)
 
         logger.info("Calculating type 7...")
         for batch_data in tqdm(tgr_data_loader.dataset.get_specific_turn(turn_mode=7)):
-            query_ids.append(batch_data["meta_info"]["target_image_ids"])
+            target_image_ids = batch_data["meta_info"]["target_image_ids"].to(device)
+            turn_idxs = batch_data["meta_info"]["turn_idxs"].to(device)
+            query_ids.append(target_image_ids)
             similarity = _three_turns(
                 tgr_model,
                 vcr_model,
@@ -452,8 +481,9 @@ def two_models_inference(
                 gallery_tgr_feats_norm,
                 gallery_vcr_feats_norm,
                 [True, True, True],
-                batch_data["meta_info"]["turn_idxs"],
+                turn_idxs,
                 tgr_nums,
+                idx_to_id,
             )
             similarities.append(similarity)
 
@@ -461,7 +491,9 @@ def two_models_inference(
 
     predictions = dict(
         query_ids=torch.cat(query_ids, dim=0),
-        gallery_ids=torch.tensor(list(tgr_data_loader.dataset.all_img_ids.values())),
+        gallery_ids=torch.tensor(list(tgr_data_loader.dataset.all_img_ids.values())).to(
+            device
+        ),
         similarity=similarities,
     )
 

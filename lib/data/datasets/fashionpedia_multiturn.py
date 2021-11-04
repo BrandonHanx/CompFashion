@@ -47,7 +47,7 @@ class FashionPediaMultiTurn(FashionPedia):
 
         return tuple(args)
 
-    def get_specific_turn(self, turn_mode, batch_size=64):
+    def get_specific_turn(self, turn_mode, batch_size=256):
         turn_mode_list = []
         for i, data in enumerate(self.data):
             if data["turn_mode"] == turn_mode:
