@@ -90,15 +90,31 @@ def compute_on_dataset_multiturn(model, data_loader, device):
                         imgs, text, text_length, return_weights=True
                     )
                     # Greedy search
-                    max_comp_idx = torch.argmax(
-                        query_feat @ gallery_comp_feats_norm.t(), dim=1
+                    # max_comp_idx = torch.argmax(
+                    #     query_feat @ gallery_comp_feats_norm.t(), dim=1
+                    # )
+                    # max_outfit_idx = torch.argmax(
+                    #     query_feat @ gallery_outfit_feats_norm.t(), dim=1
+                    # )
+                    # Random search
+                    _, comp_idxs = torch.topk(
+                        query_feat @ gallery_comp_feats_norm.t(),
+                        k=10,
+                        dim=1,
+                        largest=True,
+                        sorted=True,
                     )
-                    max_outfit_idx = torch.argmax(
-                        query_feat @ gallery_outfit_feats_norm.t(), dim=1
+                    _, outfit_idxs = torch.topk(
+                        query_feat @ gallery_outfit_feats_norm.t(),
+                        k=10,
+                        dim=1,
+                        largest=True,
+                        sorted=True,
                     )
-                    max_idx = (
-                        weights[:, 0] * max_comp_idx + weights[:, 1] * max_outfit_idx
-                    )
+                    select_idxs = torch.randint(0, 9, (comp_idxs.shape[0], 1))
+                    max_idx = weights[:, 0] * comp_idxs.gather(
+                        1, select_idxs
+                    ) + weights[:, 1] * outfit_idxs.gather(1, select_idxs)
                     max_idx = max_idx.long()
                     imgs = (gallery_comp_feats[max_idx], gallery_outfit_feats[max_idx])
 
@@ -192,7 +208,12 @@ def _single_turn(model, img_feats, text_feats, gallery_feats):
     with torch.no_grad():
         query_feats = model.compose_img_text_features(img_feats, text_feats)
         similarity = query_feats @ gallery_feats.t()
-        max_idx = torch.argmax(similarity, dim=1)
+        _, idxs = torch.topk(
+            query_feats @ gallery_feats.t(), k=10, dim=1, largest=True, sorted=True
+        )
+        select_idxs = torch.randint(0, 9, (idxs.shape[0], 1))
+        max_idx = idxs.gather(1, select_idxs)
+        max_idx = max_idx.long()
     return max_idx, similarity
 
 
