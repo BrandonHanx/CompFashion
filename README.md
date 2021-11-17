@@ -1,4 +1,4 @@
-# CompFashion
+# CompFashionIQ
 
 A code base for conducting image retrieval with text feedback experiments on FashionIQ.
 
@@ -11,19 +11,9 @@ Available methods:
 
 ## Data Preparation
 
-1. Download FashionIQ dataset according to [this](https://github.com/XiaoxiaoGuo/fashion-iq). Then move data into `train_data/fashioniq/`.
+[Here](https://drive.google.com/file/d/1GYeaPjBsLjOavTWcA0bj8U7ZIyKshK7s/view?usp=sharing) is my pre-processed data (including original images and generated vocab embeddings).
 
-2. Build vocabulary.
-   ```bash
-   python -m nltk.downloader 'punkt'
-   python build_vocab.py
-   ```
-
-3. (Optional) Generate GloVe embeddings.
-   ```bash
-   python -m spacy download en_vectors_web_lg
-   python gen_glove.py
-   ```
+Download and unzip into `./train_data`.
 
 ## Running
 
@@ -33,10 +23,4 @@ python train_net.py --config-file configs/fashioniq/tirg_bigru_init.yaml --use-t
 
 ## Results
 
-coming soon...
-
-## Different Settings in Original Methods
-
-1. VAL uses smaller val split and GloVe.
-2. CoSMo constructs captions with both orders for concatenating.
-3. ...
+Please refer to [this table](https://docs.google.com/spreadsheets/d/1l9CRWC7SwPEWE-Z0oWB_0PvnhCAB-V2ZZ4XsQ-cKpLA/edit#gid=0).
