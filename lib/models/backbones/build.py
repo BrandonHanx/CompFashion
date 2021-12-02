@@ -10,8 +10,6 @@ def build_img_model(cfg):
         model = build_resnet(cfg)
     elif cfg.MODEL.IMG_MODEL in ["m_resnet50", "m_resnet101"]:
         model = build_m_resnet(cfg)
-    #     elif cfg.MODEL.IMG_MODEL == "diva":
-    #         model = build_diva(cfg)
     else:
         raise NotImplementedError
     return model

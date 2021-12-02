@@ -1,0 +1,25 @@
+executable       = run.sh
+
+universe         = docker
+docker_image     = brandonhanx/pytorch:compfashion
+
+log    = condor_log/c$(cluster).p$(process).log
+output = condor_log/c$(cluster).p$(process).out
+error  = condor_log/c$(cluster).p$(process).error
+
+environment = "mount=/vol/research/xmodal_dl"
+
++CanCheckpoint = True
++GPUMem = 11480
++JobRunTime = 12
+
+should_transfer_files = True
+stream_output = True
+
+request_GPUs     = 1
+request_CPUs     = 1
+request_memory = 11G
+
+queue arguments from (
+  --config-file configs/fashioniq/tirg_bigru_clip.yaml --tensorboard
+)
