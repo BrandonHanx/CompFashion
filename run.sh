@@ -1,9 +1,9 @@
 #!/bin/bash
 
-PYTHONHOME="/vol/research/xmodal_dl/compfashion-env/bin/"
-HOME="/vol/research/xmodal_dl/CompFashion/"
+PYTHONHOME="/user/HS500/xh00414/miniconda3/envs/py37/bin"
+HOME="/vol/research/xmodal_dl/CompFashion"
 
 echo $HOME
 echo 'args:' $@
 
-$PYTHONHOME/python $Home/train_net.py --root $HOME $@
+$PYTHONHOME/python $HOME/train_net.py --root $HOME $@

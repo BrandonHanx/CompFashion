@@ -7,10 +7,10 @@ log    = condor_log/c$(cluster).p$(process).log
 output = condor_log/c$(cluster).p$(process).out
 error  = condor_log/c$(cluster).p$(process).error
 
-environment = "mount=/vol/research/xmodal_dl/"
+environment = "mount=/vol/research/xmodal_dl/,/user/HS500/xh00414"
 
 +CanCheckpoint = True
-+GPUMem = 11480
++GPUMem = 11000
 +JobRunTime = 12
 
 should_transfer_files = True
@@ -19,7 +19,11 @@ stream_output = True
 request_GPUs     = 1
 request_CPUs     = 1
 request_memory = 11G
+requirements = (CUDAGlobalMemoryMb > 4500) && \
+               (HasDocker) && \
+               (CUDACapability > 2.0) && \
+               (CUDADeviceName == "GeForce RTX 3090")
 
 queue arguments from (
-  --config-file $ENV(PWD)/CompFashion/configs/fashioniq/tirg_bigru_clip.yaml --tensorboard
+  --config-file $ENV(PWD)/configs/fashioniq/tirg_bigru_clip.yaml --use-tensorboard
 )
