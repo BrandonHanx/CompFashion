@@ -114,6 +114,12 @@ def train(cfg, output_dir, local_rank, distributed, resume_from, use_tensorboard
 def main():
     parser = argparse.ArgumentParser(description="PyTorch Person Search Training")
     parser.add_argument(
+        "--root",
+        default="./",
+        help="root path",
+        type=str,
+    )
+    parser.add_argument(
         "--config-file",
         default="",
         metavar="FILE",
@@ -158,9 +164,10 @@ def main():
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
+    cfg.ROOT = args.root
     cfg.freeze()
 
-    output_dir = os.path.join("./output", args.config_file[8:-5])
+    output_dir = os.path.join(args.root, "./output", args.config_file[8:-5])
     makedir(output_dir)
 
     logger = setup_logger("CompFashion", output_dir, get_rank())

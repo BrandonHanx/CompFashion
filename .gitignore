@@ -10,3 +10,4 @@ output/
 train_data/
 pretrained/
 __pycache__/
+condor_log/

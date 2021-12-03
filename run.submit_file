@@ -1,13 +1,13 @@
 executable       = run.sh
 
 universe         = docker
-docker_image     = brandonhanx/pytorch:compfashion
+docker_image     = nvidia/cuda:11.1-runtime-ubuntu18.04
 
 log    = condor_log/c$(cluster).p$(process).log
 output = condor_log/c$(cluster).p$(process).out
 error  = condor_log/c$(cluster).p$(process).error
 
-environment = "mount=/vol/research/xmodal_dl"
+environment = "mount=/vol/research/xmodal_dl/"
 
 +CanCheckpoint = True
 +GPUMem = 11480
@@ -21,5 +21,5 @@ request_CPUs     = 1
 request_memory = 11G
 
 queue arguments from (
-  --config-file configs/fashioniq/tirg_bigru_clip.yaml --tensorboard
+  --config-file $ENV(PWD)/CompFashion/configs/fashioniq/tirg_bigru_clip.yaml --tensorboard
 )
