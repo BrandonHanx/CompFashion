@@ -44,7 +44,7 @@ def build_dataset(cfg, dataset_catalog, is_train=True):
         )
     datasets = []
     for dataset_name in dataset_list:
-        data = dataset_catalog.get(dataset_name)
+        data = dataset_catalog.get(cfg.ROOT, dataset_name)
         factory = getattr(D, data["factory"])
         args = data["args"]
         args["transform"] = build_transform(dataset_name, is_train)

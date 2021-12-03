@@ -1,8 +1,9 @@
 #!/bin/bash
 
-Home="/vol/research/xmodal_dl"
-echo $Home
+PYTHONHOME="/vol/research/xmodal_dl/compfashion-env/bin/"
+HOME="/vol/research/xmodal_dl/CompFashion/"
 
+echo $HOME
 echo 'args:' $@
 
-python $Home/CompFashion/train_net.py $@
+$PYTHONHOME/python $Home/train_net.py --root $HOME $@
